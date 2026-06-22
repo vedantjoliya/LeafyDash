@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Sign In | Leafy Dash</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="/images/leafy_icon.png">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-container glass-panel">
+            <div class="auth-header">
+                <a href="/" class="auth-logo">
+                    <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 56px; height: 56px; object-fit: contain;">
+                    Leafy Dash
+                </a>
+                <h2 class="auth-title">Business Login</h2>
+                <p class="auth-subtitle">Sign in to manage your custom workspace.</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="name@business.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+
+            <div class="text-center-link">
+                Need a workspace? <a href="/register">Register your business</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const alertContainer = document.getElementById('alertContainer');
+            
+            alertContainer.innerHTML = '';
+            
+            if (!isValidEmail(email)) {
+                alertContainer.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Please enter a valid email address.</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            const passwordError = validateRequiredString(password, "Password");
+            if (passwordError) {
+                alertContainer.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: ${passwordError}</span>
+                    </div>
+                `;
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email.trim(), password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('user_token', data.access_token);
+                    localStorage.setItem('user_email', email.trim());
+                    localStorage.setItem('user_role', 'user');
+                    
+                    if (data.status === 'approved') {
+                        window.location.href = '/onboarding';
+                    } else if (data.status === 'onboarded') {
+                        window.location.href = '/dashboard';
+                    } else {
+                        alertContainer.innerHTML = `
+                            <div class="alert-box alert-warning">
+                                <span>Warning: Unexpected status: ${data.status}</span>
+                            </div>
+                        `;
+                    }
+                } else {
+                    alertContainer.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${data.detail || 'Login failed. Verify credentials.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                alertContainer.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error. Please try again.</span>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

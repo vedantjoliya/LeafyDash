@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal | Leafy Dash</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <link rel="icon" type="image/png" href="/images/leafy_icon.png">
+</head>
+<body>
+    <!-- Admin Login Screen -->
+    <div id="adminLoginWrapper" class="auth-wrapper">
+        <div class="auth-container glass-panel">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 56px; height: 56px; object-fit: contain;">
+                    Leafy Admin
+                </div>
+                <h2 class="auth-title">Admin Console</h2>
+                <p class="auth-subtitle">Verify admin credentials to manage accounts.</p>
+            </div>
+            
+            <div id="loginAlert"></div>
+
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label for="adminUsername" class="form-label">Username</label>
+                    <input type="text" id="adminUsername" class="form-control" placeholder="admin" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="adminPassword" class="form-label">Password</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Access Console</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Nav Bar (outside wrapper for correct fixed positioning) -->
+    <div class="mobile-nav-bar" id="adminMobileNav" style="display:none;">
+        <button class="hamburger-btn" onclick="toggleSidebar()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <div class="mobile-nav-brand" style="display: flex; align-items: center; gap: 8px;">
+            <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 36px; height: 36px; object-fit: contain;">
+            Leafy <span>Admin</span>
+        </div>
+        <div style="width: 24px;"></div>
+    </div>
+    <div class="sidebar-overlay" id="adminSidebarOverlay"></div>
+
+    <!-- Admin Panel Workspace -->
+    <div id="adminPanelWrapper" style="display: none;" class="dashboard-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 48px; height: 48px; object-fit: contain;">
+                Leafy <span>Admin</span>
+            </div>
+            <nav class="sidebar-menu" id="sidebarMenu">
+                <li class="menu-item active" data-section="pending" id="menu-Pending" onclick="switchAdminSection('pending')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>Pending Requests</span>
+                </li>
+                <li class="menu-item" data-section="approved" id="menu-Approved" onclick="switchAdminSection('approved')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                    <span>Approved Accounts</span>
+                </li>
+                <li class="menu-item" data-section="support" id="menu-Support" onclick="switchAdminSection('support')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>Support Inbox</span>
+                </li>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-badge" style="margin-bottom: 20px;">
+                    <div class="avatar">A</div>
+                    <div class="user-info">
+                        <span class="user-name">System Admin</span>
+                        <span class="user-industry">Console Root</span>
+                    </div>
+                </div>
+                <button onclick="logoutAdmin()" class="btn btn-secondary btn-block" style="padding: 10px; font-size: 0.85rem;">Sign Out</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="dashboard-header">
+                <div>
+                    <h1 class="header-title" id="adminPageTitle">Pending Requests</h1>
+                    <p style="color: var(--text-secondary); margin-top: 4px;" id="adminPageSubtitle">Manage pending business registrations</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="loadUsers()">Refresh Data</button>
+                </div>
+            </header>
+
+            <div id="adminPanelAlert"></div>
+
+            <!-- Section: Pending Requests -->
+            <section id="sect-pending" class="dashboard-section active">
+                <div class="table-card glass-panel" style="padding: 28px; background: #FFFDF9; box-shadow: var(--shadow-soft);">
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Business Name</th>
+                                    <th>Industry Sector</th>
+                                    <th>Contact Email</th>
+                                    <th>Requested On</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingUsersTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Loading pending accounts...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Approved Accounts -->
+            <section id="sect-approved" class="dashboard-section">
+                <div class="table-card glass-panel" style="padding: 28px; background: #FFFDF9; box-shadow: var(--shadow-soft);">
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Business Name</th>
+                                    <th>Industry Sector</th>
+                                    <th>Contact Email</th>
+                                    <th>Registered On</th>
+                                    <th>Onboarded Status</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeUsersTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No approved businesses yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Support Inbox -->
+            <section id="sect-support" class="dashboard-section">
+                <div class="table-card glass-panel" style="padding: 28px; background: #FFFDF9; box-shadow: var(--shadow-soft);">
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Business Name</th>
+                                    <th>Category</th>
+                                    <th>Subject</th>
+                                    <th>Message</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="supportMessagesTable">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No support messages received yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script imports and controller logic -->
+    <script src="/js/app.js"></script>
+    <script>
+        // Check local storage for token on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('admin_token');
+            if (token) {
+                showPanel();
+                loadUsers();
+            }
+        });
+
+        // Admin login form handler
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            const alertBox = document.getElementById('loginAlert');
+            
+            alertBox.innerHTML = '';
+
+            const usernameError = validateRequiredString(username, "Username");
+            if (usernameError) {
+                alertBox.innerHTML = `<div class="alert-box alert-danger"><span>Error: ${usernameError}</span></div>`;
+                return;
+            }
+
+            const passwordError = validateRequiredString(password, "Password");
+            if (passwordError) {
+                alertBox.innerHTML = `<div class="alert-box alert-danger"><span>Error: ${passwordError}</span></div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/admin-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username.trim(), password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('admin_token', data.access_token);
+                    showPanel();
+                    loadUsers();
+                } else {
+                    alertBox.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${data.detail || 'Access denied.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                alertBox.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error.</span>
+                    </div>
+                `;
+            }
+        });
+
+        function showPanel() {
+            document.getElementById('adminLoginWrapper').style.display = 'none';
+            document.getElementById('adminPanelWrapper').style.display = 'flex';
+            // Show mobile nav on small screens
+            const mobileNav = document.getElementById('adminMobileNav');
+            const overlay = document.getElementById('adminSidebarOverlay');
+            if (mobileNav) mobileNav.style.removeProperty('display');
+            if (overlay) overlay.style.removeProperty('display');
+        }
+
+        function showLogin() {
+            document.getElementById('adminLoginWrapper').style.display = 'flex';
+            document.getElementById('adminPanelWrapper').style.display = 'none';
+            // Hide mobile nav
+            const mobileNav = document.getElementById('adminMobileNav');
+            if (mobileNav) mobileNav.style.display = 'none';
+        }
+
+        function logoutAdmin() {
+            localStorage.removeItem('admin_token');
+            showLogin();
+        }
+
+        function switchAdminSection(sectionId) {
+            // Update menu active class
+            document.querySelectorAll('#sidebarMenu .menu-item').forEach(item => {
+                if (item.getAttribute('data-section') === sectionId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            // Update active section visibility
+            document.querySelectorAll('.dashboard-section').forEach(sect => {
+                if (sect.id === `sect-${sectionId}`) {
+                    sect.classList.add('active');
+                } else {
+                    sect.classList.remove('active');
+                }
+            });
+            // Update titles
+            const titleEl = document.getElementById('adminPageTitle');
+            const subtitleEl = document.getElementById('adminPageSubtitle');
+            if (sectionId === 'pending') {
+                titleEl.textContent = 'Pending Requests';
+                subtitleEl.textContent = 'Manage pending business registrations';
+            } else if (sectionId === 'approved') {
+                titleEl.textContent = 'Approved Accounts';
+                subtitleEl.textContent = 'Active business workspace accounts';
+            } else if (sectionId === 'support') {
+                titleEl.textContent = 'Support Inbox';
+                subtitleEl.textContent = 'User contact support messages and queries';
+                loadSupportMessages();
+            }
+        }
+
+        async function loadUsers() {
+            const token = localStorage.getItem('admin_token');
+            const pendingTable = document.getElementById('pendingUsersTable');
+            const activeTable = document.getElementById('activeUsersTable');
+            const panelAlert = document.getElementById('adminPanelAlert');
+            
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    logoutAdmin();
+                    return;
+                }
+                
+                const users = await response.json();
+                
+                const pending = users.filter(u => u.status === 'pending');
+                const active = users.filter(u => u.status !== 'pending');
+                
+                // Render Pending
+                if (pending.length === 0) {
+                    pendingTable.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No pending requests.</td>
+                        </tr>
+                    `;
+                } else {
+                    pendingTable.innerHTML = pending.map(user => `
+                        <tr>
+                            <td><strong>${escapeHtml(user.business_name)}</strong></td>
+                            <td>${escapeHtml(user.industry)}</td>
+                            <td>${escapeHtml(user.email)}</td>
+                            <td>${formatDate(user.created_at)}</td>
+                            <td><span class="badge badge-warning">Pending Review</span></td>
+                            <td style="text-align: right;">
+                                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                    <button onclick="approveUser(${user.id})" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; margin:0;">Approve</button>
+                                    <button onclick="rejectUser(${user.id})" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; color: var(--danger); border-color: rgba(239, 68, 68, 0.2); margin:0;">Reject</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                
+                // Render Active
+                if (active.length === 0) {
+                    activeTable.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No approved businesses yet.</td>
+                        </tr>
+                    `;
+                } else {
+                    activeTable.innerHTML = active.map(user => `
+                        <tr>
+                            <td><strong>${escapeHtml(user.business_name)}</strong></td>
+                            <td>${escapeHtml(user.industry)}</td>
+                            <td>${escapeHtml(user.email)}</td>
+                            <td>${formatDate(user.created_at)}</td>
+                            <td><span class="badge ${user.status === 'onboarded' ? 'badge-success' : 'badge-warning'}">${user.status === 'onboarded' ? 'Onboarded' : 'Awaiting Onboarding'}</span></td>
+                            <td style="text-align: right;">
+                                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                    <button onclick="openMessageModal(${user.id}, '${escapeHtml(user.business_name)}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; margin:0; background: var(--accent-green); border-color: var(--accent-green);">Message</button>
+                                    <button onclick="deleteShop(${user.id})" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; color: var(--danger); border-color: rgba(239, 68, 68, 0.2); margin:0;">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                
+            } catch (err) {
+                panelAlert.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Failed to load users list.</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function approveUser(userId) {
+            const token = localStorage.getItem('admin_token');
+            const panelAlert = document.getElementById('adminPanelAlert');
+            panelAlert.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/admin/approve/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-success">
+                            <span>Success: Business approved successfully!</span>
+                        </div>
+                    `;
+                    loadUsers();
+                } else {
+                    const err = await response.json();
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${err.detail || 'Approval failed.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                panelAlert.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error.</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function rejectUser(userId) {
+            if (!confirm('Are you sure you want to reject and delete this registration?')) return;
+            
+            const token = localStorage.getItem('admin_token');
+            const panelAlert = document.getElementById('adminPanelAlert');
+            panelAlert.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/admin/reject/${userId}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-success">
+                            <span>Success: Business request rejected/deleted.</span>
+                        </div>
+                    `;
+                    loadUsers();
+                } else {
+                    const err = await response.json();
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${err.detail || 'Rejection failed.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                panelAlert.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error.</span>
+                    </div>
+                `;
+            }
+        }
+        async function loadSupportMessages() {
+            const token = localStorage.getItem('admin_token');
+            const supportTable = document.getElementById('supportMessagesTable');
+            if (!supportTable) return;
+            
+            supportTable.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Loading support messages...</td>
+                </tr>
+            `;
+            
+            try {
+                const response = await fetch('/api/admin/support-messages', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const msgs = await response.json();
+                
+                if (msgs.length === 0) {
+                    supportTable.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No support messages received yet.</td>
+                        </tr>
+                    `;
+                } else {
+                    supportTable.innerHTML = msgs.map(msg => `
+                        <tr>
+                            <td><strong>${escapeHtml(msg.business_name)}</strong></td>
+                            <td><span class="badge badge-warning" style="font-size:0.7rem; padding: 4px 8px; text-transform:none;">${escapeHtml(msg.category)}</span></td>
+                            <td>${escapeHtml(msg.subject)}</td>
+                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(msg.message)}">${escapeHtml(msg.message)}</td>
+                            <td><span class="badge ${msg.status === 'Replied' ? 'badge-success' : 'badge-warning'}">${msg.status}</span></td>
+                            <td style="text-align: right;">
+                                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                                    <button onclick="openReplyModal(${msg.id}, '${escapeHtml(msg.business_name)}', '${escapeHtml(msg.subject)}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; margin:0;" ${msg.status === 'Replied' ? 'disabled style="opacity:0.6; cursor:not-allowed;"' : ''}>Reply</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteShop(userId) {
+            if (!confirm('Are you sure you want to permanently delete this shop and all its data (products, sales, settings)? This action cannot be undone.')) return;
+            
+            const token = localStorage.getItem('admin_token');
+            const panelAlert = document.getElementById('adminPanelAlert');
+            panelAlert.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/admin/shop/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.ok) {
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-success">
+                            <span>Success: Shop account and all operational data deleted successfully!</span>
+                        </div>
+                    `;
+                    loadUsers();
+                } else {
+                    const err = await response.json();
+                    panelAlert.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${err.detail || 'Failed to delete shop.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                panelAlert.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error.</span>
+                    </div>
+                `;
+            }
+        }
+
+        let isReplyMode = false;
+        let replyTargetMsgId = null;
+
+        function openMessageModal(userId, businessName) {
+            isReplyMode = false;
+            replyTargetMsgId = null;
+            document.getElementById('messageModalTitle').textContent = 'Send Announcement to Shop';
+            document.getElementById('messageRecipientId').value = userId;
+            document.getElementById('messageRecipientName').value = businessName;
+            document.getElementById('messageSubject').value = '';
+            document.getElementById('messageContent').value = '';
+            document.getElementById('sendMessageModal').style.display = 'flex';
+        }
+
+        function openReplyModal(msgId, businessName, ticketSubject) {
+            isReplyMode = true;
+            replyTargetMsgId = msgId;
+            document.getElementById('messageModalTitle').textContent = 'Reply to Support Message';
+            document.getElementById('messageRecipientId').value = '';
+            document.getElementById('messageRecipientName').value = businessName;
+            document.getElementById('messageSubject').value = `Re: ${ticketSubject}`;
+            document.getElementById('messageContent').value = '';
+            document.getElementById('sendMessageModal').style.display = 'flex';
+        }
+
+        function closeMessageModal() {
+            document.getElementById('sendMessageModal').style.display = 'none';
+        }
+
+        document.getElementById('sendMessageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('admin_token');
+            const userId = document.getElementById('messageRecipientId').value;
+            const subject = document.getElementById('messageSubject').value;
+            const message = document.getElementById('messageContent').value;
+            const alertBox = document.getElementById('messageModalAlert');
+            alertBox.innerHTML = '';
+
+            const subjectError = validateRequiredString(subject, "Subject");
+            if (subjectError) {
+                alertBox.innerHTML = `<div class="alert-box alert-danger" style="margin-bottom: 20px;"><span>Error: ${subjectError}</span></div>`;
+                return;
+            }
+
+            const messageError = validateRequiredString(message, "Message Content");
+            if (messageError) {
+                alertBox.innerHTML = `<div class="alert-box alert-danger" style="margin-bottom: 20px;"><span>Error: ${messageError}</span></div>`;
+                return;
+            }
+            
+            let url = `/api/admin/message/${userId}`;
+            if (isReplyMode) {
+                url = `/api/admin/support-messages/reply/${replyTargetMsgId}`;
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ subject: subject.trim(), message: message.trim() })
+                });
+                
+                if (response.ok) {
+                    alertBox.innerHTML = `
+                        <div class="alert-box alert-success" style="margin-bottom: 20px;">
+                            <span>Success: Message sent successfully!</span>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        closeMessageModal();
+                        if (isReplyMode) {
+                            loadSupportMessages();
+                        }
+                    }, 1500);
+                } else {
+                    const err = await response.json();
+                    alertBox.innerHTML = `
+                        <div class="alert-box alert-danger" style="margin-bottom: 20px;">
+                            <span>Error: ${err.detail || 'Message dispatch failed.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                alertBox.innerHTML = `
+                    <div class="alert-box alert-danger" style="margin-bottom: 20px;">
+                        <span>Error: Network error.</span>
+                    </div>
+                `;
+            }
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('adminSidebarOverlay') || document.querySelector('.sidebar-overlay');
+            
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.classList.toggle('sidebar-open');
+            }
+        }
+        
+        // Mobile sidebar closing and overlay bindings
+        document.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('adminSidebarOverlay');
+            if (overlay) {
+                overlay.addEventListener('click', toggleSidebar);
+            }
+            
+            // Close sidebar when clicking links on mobile
+            const menuItems = document.querySelectorAll('.sidebar-menu .menu-item');
+            menuItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const sidebar = document.querySelector('.sidebar');
+                    const ov = document.getElementById('adminSidebarOverlay');
+                    if (sidebar && sidebar.classList.contains('active')) {
+                        sidebar.classList.remove('active');
+                        if (ov) ov.classList.remove('active');
+                        document.body.classList.remove('sidebar-open');
+                    }
+                });
+            });
+        });
+    </script>
+
+    <!-- Modal: Send Message to Shop -->
+    <div id="sendMessageModal" class="modal-backdrop" style="display: none;">
+        <div class="modal-content glass-panel" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; font-family: var(--font-title);" id="messageModalTitle">Send Message to Shop</h3>
+                <button onclick="closeMessageModal()" class="btn btn-secondary" style="padding: 6px 12px; margin: 0;">Close</button>
+            </div>
+            
+            <div id="messageModalAlert"></div>
+            
+            <form id="sendMessageForm">
+                <input type="hidden" id="messageRecipientId">
+                <div class="form-group">
+                    <label class="form-label">Recipient Shop</label>
+                    <input type="text" id="messageRecipientName" class="form-control" readonly style="background: rgba(0,0,0,0.05);">
+                </div>
+                <div class="form-group">
+                    <label for="messageSubject" class="form-label">Subject</label>
+                    <input type="text" id="messageSubject" class="form-control" placeholder="e.g. System Update / Billing Details" required>
+                </div>
+                <div class="form-group">
+                    <label for="messageContent" class="form-label">Message Content</label>
+                    <textarea id="messageContent" class="form-control" rows="6" placeholder="Write your message here..." required style="resize: vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Send Announcement Message</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

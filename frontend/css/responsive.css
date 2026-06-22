@@ -1,0 +1,1166 @@
+/* ======================================================
+   LEAFY DASH — Comprehensive Responsive System
+   Covers: Mobile (< 640px), Tablet (640-1024px), 
+           Small Laptop (1024-1280px), Desktop (1280px+)
+   ====================================================== */
+
+/* ============================================
+   MOBILE TOP NAVIGATION BAR (hamburger)
+   ============================================ */
+.mobile-nav-bar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #F4EFEB;
+    border-bottom: 1px solid var(--border-color);
+    z-index: 200;
+    padding: 0 20px;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(44, 62, 53, 0.06);
+}
+
+.mobile-nav-brand {
+    font-family: var(--font-title);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+.mobile-nav-brand span {
+    color: var(--accent-green);
+    font-style: italic;
+}
+
+.hamburger-btn {
+    width: 40px;
+    height: 40px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.hamburger-btn:hover {
+    background: var(--bg-input);
+    border-color: var(--border-hover);
+}
+
+/* ============================================
+   SIDEBAR OVERLAY (dark backdrop on mobile)
+   ============================================ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 62, 53, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Admin panel overlay uses a specific ID — style it same as .sidebar-overlay */
+#adminSidebarOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 62, 53, 0.45);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+#adminSidebarOverlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Admin mobile nav is shown via JS after login — CSS handles layout */
+#adminMobileNav.mobile-nav-bar {
+    display: none; /* Default: hidden on desktop */
+}
+
+
+
+/* ============================================
+   MEDIUM LAPTOP (1200px – 1279px)
+   Sidebar slightly smaller, minor adjustments
+   ============================================ */
+@media (max-width: 1279px) {
+    .sidebar {
+        width: 220px;
+        padding: 28px 16px;
+    }
+
+    .main-content {
+        margin-left: 220px;
+        padding: 36px 28px;
+    }
+
+    .sidebar-brand {
+        font-size: 1.5rem;
+        margin-bottom: 32px;
+    }
+
+    .header-title {
+        font-size: 1.9rem;
+    }
+
+    .metric-value {
+        font-size: 1.8rem;
+    }
+
+    .chart-card {
+        padding: 24px;
+    }
+
+    .custom-table th,
+    .custom-table td {
+        padding: 14px 18px;
+    }
+
+    .table-header-row {
+        padding: 18px 20px;
+    }
+
+    /* Stack form+list split at this size — 1fr 2fr in 784px gives only 230px form column */
+    .dashboard-grid-split {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+
+    /* 4-col grid becomes 3-col */
+    .grid-4-col {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Reviews 2-col remains */
+    .reviews-grid-2col {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
+/* ============================================
+   SMALL LAPTOP TIGHT (1024px – 1199px)
+   Critical breakpoint — many laptops land here
+   Sidebar very slim, aggressive layout collapse
+   ============================================ */
+@media (max-width: 1199px) {
+    /* Narrower sidebar to give content more room */
+    .sidebar {
+        width: 200px;
+        padding: 24px 14px;
+    }
+
+    .main-content {
+        margin-left: 200px;
+        padding: 28px 24px;
+    }
+
+    /* Brand text smaller */
+    .sidebar-brand {
+        font-size: 1.35rem;
+        margin-bottom: 28px;
+        gap: 7px;
+    }
+
+    /* Menu items tighter */
+    .menu-item {
+        padding: 11px 14px;
+        font-size: 0.88rem;
+        gap: 8px;
+    }
+
+    /* User badge compact */
+    .user-badge {
+        gap: 10px;
+    }
+
+    .user-name {
+        font-size: 0.85rem;
+    }
+
+    /* Avatar smaller */
+    .avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    /* Header adjustments */
+    .header-title {
+        font-size: 1.7rem;
+    }
+
+    .dashboard-header {
+        margin-bottom: 28px;
+    }
+
+    /* Stack metrics 2-col at this size */
+    .metrics-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .metric-card {
+        padding: 20px;
+    }
+
+    .metric-value {
+        font-size: 1.6rem;
+    }
+
+    /* Charts stack */
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    /* Grid split: always single column */
+    .dashboard-grid-split {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+
+    /* 4-col → 2-col */
+    .grid-4-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 3-col → 2-col */
+    .grid-3-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* CRM grids collapse */
+    .grid-crm-3-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-crm-split-row {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-crm-2-col {
+        grid-template-columns: 1fr;
+    }
+
+    /* Table padding reduced */
+    .custom-table th,
+    .custom-table td {
+        padding: 12px 16px;
+        font-size: 0.88rem;
+    }
+
+    /* Chart card smaller */
+    .chart-card {
+        padding: 20px;
+        min-height: 320px;
+    }
+
+    /* Table header row */
+    .table-header-row {
+        padding: 16px 18px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* Search / sort group wraps */
+    .search-sort-group {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .search-input-premium {
+        min-width: 160px !important;
+    }
+
+    .sort-select-premium {
+        min-width: 140px !important;
+    }
+
+    /* Storefront context select full row */
+    #salesLocationContext,
+    #inventoryLocationContext,
+    #reviewsLocationContext,
+    #crmLocationContext,
+    #customersLocationContext {
+        width: 200px !important;
+    }
+
+    /* Reviews: 1-col at tight small laptop */
+    .reviews-grid-2col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Modal narrower */
+    .modal-content {
+        max-width: 92%;
+    }
+
+    /* Onboarding wizard padding reduced */
+    .onboarding-wizard {
+        padding: 32px 24px;
+    }
+
+    /* Log cards: no hover translate */
+    .log-card:hover {
+        transform: translateY(-1px);
+    }
+
+    /* CRM 3-col metrics → 2-col */
+    .grid-crm-3-col {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 14px;
+    }
+}
+
+/* ============================================
+   TABLET PORTRAIT / LANDSCAPE (640px – 1023px)
+   Sidebar hidden by default, slides in as drawer
+   ============================================ */
+@media (max-width: 1023px) {
+    /* Show mobile top bar */
+    .mobile-nav-bar {
+        display: flex;
+    }
+
+    /* Hide mobile nav-bar when sidebar is open */
+    body.sidebar-open .mobile-nav-bar {
+        display: none !important;
+    }
+
+    /* Show overlay element */
+    .sidebar-overlay {
+        display: block;
+    }
+
+    /* Sidebar transforms to slide-in drawer */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -300px;
+        width: 290px;
+        height: 100vh;
+        z-index: 1000;
+        border-right: 1px solid var(--border-color);
+        padding: 24px 20px;
+        transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        box-shadow: none;
+        overflow-y: auto;
+    }
+
+    /* Sidebar slides in when .active */
+    .sidebar.active {
+        left: 0;
+        box-shadow: 6px 0 30px rgba(44, 62, 53, 0.15);
+    }
+
+    /* Main content full width, padded top for mobile nav */
+    .main-content {
+        margin-left: 0;
+        padding: 84px 24px 32px 24px;
+    }
+
+    /* Header layout stacks on tablet */
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 28px;
+    }
+
+    .header-title {
+        font-size: 1.75rem;
+    }
+
+    /* Sidebar brand top padding to clear nothing (full viewport) */
+    .sidebar-brand {
+        margin-bottom: 28px;
+        padding-top: 8px;
+    }
+
+    /* Charts grid stacks */
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Dashboard split stacks */
+    .dashboard-grid-split {
+        grid-template-columns: 1fr;
+    }
+
+    /* Metric row 2-col on tablets */
+    .metrics-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    /* 4-col -> 2-col */
+    .grid-4-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 3-col -> 2-col */
+    .grid-3-col {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* CRM 3-col -> 1-col */
+    .grid-crm-3-col {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-crm-split-row {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-crm-2-col {
+        grid-template-columns: 1fr;
+    }
+
+    /* Metric card adjustments */
+    .metric-card {
+        padding: 20px;
+    }
+
+    .metric-value {
+        font-size: 1.7rem;
+    }
+
+    /* Table overflow remains scrollable */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .custom-table th,
+    .custom-table td {
+        padding: 14px 16px;
+        white-space: nowrap;
+    }
+
+    /* Search sort group wraps on tablet */
+    .search-sort-group {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .search-input-premium,
+    .sort-select-premium {
+        min-width: 180px !important;
+    }
+
+    /* Location selector bars stack */
+    .location-selector-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    .location-selector-bar select,
+    .location-selector-bar .form-control {
+        width: 100% !important;
+    }
+
+    /* QR container padding */
+    .qr-container {
+        padding: 24px;
+    }
+
+    /* Chart card */
+    .chart-card {
+        padding: 20px;
+        min-height: 300px;
+    }
+
+    /* Onboarding */
+    .onboarding-wizard {
+        padding: 32px 24px;
+    }
+
+    /* Log card flex column */
+    .log-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .log-card-right {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: auto;
+    }
+
+    /* Reviews 2-col grid -> 1-col on small tablets */
+    .reviews-grid-2col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Table header row wraps */
+    .table-header-row {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px 20px;
+    }
+
+    /* Modal content narrows */
+    .modal-content {
+        width: 94%;
+        max-width: 94%;
+        padding: 24px;
+    }
+}
+
+/* ============================================
+   MOBILE PHONE (< 640px)
+   Full single-column layout
+   ============================================ */
+@media (max-width: 639px) {
+    .mobile-nav-bar {
+        height: 56px;
+    }
+
+    .main-content {
+        padding: 72px 16px 24px 16px;
+    }
+
+    /* All metrics single column on phone */
+    .metrics-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .metric-card {
+        padding: 18px;
+    }
+
+    .metric-value {
+        font-size: 1.55rem;
+    }
+
+    /* Header title smaller */
+    .header-title {
+        font-size: 1.5rem;
+    }
+
+    /* All grids -> 1 col */
+    .grid-4-col,
+    .grid-3-col,
+    .grid-2-col,
+    .grid-crm-3-col,
+    .grid-crm-split-row,
+    .grid-crm-2-col {
+        grid-template-columns: 1fr !important;
+        gap: 12px;
+    }
+
+    /* Charts single column */
+    .charts-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .chart-card {
+        padding: 16px;
+        min-height: 260px;
+    }
+
+    /* Dashboard split stacks */
+    .dashboard-grid-split {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    /* Tables full horizontal scroll */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .custom-table th,
+    .custom-table td {
+        padding: 12px 14px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .custom-table th {
+        font-size: 0.75rem;
+    }
+
+    .table-header-row {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* Search input full width on phone */
+    .search-sort-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .search-input-premium,
+    .sort-select-premium {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Location selector bar stacks */
+    .location-selector-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+
+    .location-selector-bar select,
+    .location-selector-bar .form-control {
+        width: 100% !important;
+    }
+
+    /* Buttons stacking on phone */
+    .header-actions {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        font-size: 0.82rem;
+        padding: 10px 18px;
+    }
+
+    /* Onboarding */
+    .onboarding-wizard {
+        padding: 24px 18px;
+    }
+
+    /* Log cards stacked */
+    .log-card {
+        padding: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .log-card-right {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        height: auto;
+    }
+
+    .log-card-title {
+        font-size: 0.95rem;
+    }
+
+    .log-card-amount {
+        font-size: 1.1rem;
+    }
+
+    /* QR panel compact */
+    .qr-container {
+        padding: 16px;
+    }
+
+    .qr-box img {
+        width: 180px;
+        height: 180px;
+    }
+
+    /* Modals full width on phone */
+    .modal-content {
+        width: 96%;
+        max-width: 96%;
+        padding: 20px 16px;
+        margin: 10px;
+    }
+
+    /* Auth container */
+    .auth-container {
+        padding: 28px 20px;
+    }
+
+    /* Toggle card labels truncate */
+    .toggle-card {
+        padding: 16px;
+    }
+
+    /* Badge slightly smaller */
+    .badge {
+        font-size: 0.68rem;
+        padding: 4px 8px;
+    }
+
+    /* Settings grid 1-col */
+    .settings-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    /* Reviews: 1-col always on phone */
+    .reviews-grid-2col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Charts container smaller on phone */
+    .chart-container {
+        min-height: 180px;
+    }
+
+    /* Hide sidebar brand on mobile (shows in mobile nav bar) */
+    .sidebar .sidebar-brand {
+        display: none !important;
+    }
+
+    /* Smaller font in tables */
+    .custom-table td,
+    .custom-table th {
+        font-size: 0.8rem;
+    }
+
+    /* Sidebar narrower on very small phones */
+    .sidebar {
+        width: 270px;
+        left: -280px;
+    }
+}
+
+/* ============================================
+   SPECIFIC COMPONENT RESPONSIVE OVERRIDES
+   ============================================ */
+
+/* Storefront Context / Location Selector Bar responsive */
+@media (max-width: 1023px) {
+    /* Panels with location selectors need to stack */
+    [style*="justify-content:space-between"][style*="align-items:center"] {
+        flex-wrap: wrap;
+    }
+
+    /* Sales location context select narrows */
+    #salesLocationContext,
+    #reviewsLocationContext,
+    #crmLocationContext,
+    #customersLocationContext {
+        width: 100% !important;
+        max-width: 320px;
+    }
+}
+
+@media (max-width: 639px) {
+    #salesLocationContext,
+    #reviewsLocationContext,
+    #crmLocationContext,
+    #customersLocationContext {
+        width: 100% !important;
+        max-width: 100%;
+    }
+}
+
+/* ============================================
+   PRINT MEDIA (keep as-is from dashboard.css)
+   ============================================ */
+/* Print styles are already defined in dashboard.css */
+
+/* ============================================
+   TOUCH TARGET IMPROVEMENTS
+   ============================================ */
+@media (max-width: 1023px) {
+    .btn {
+        min-height: 44px;
+    }
+
+    .menu-item {
+        min-height: 48px;
+    }
+
+    .form-control {
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    .icon-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .option-btn {
+        padding: 16px 20px;
+    }
+}
+
+/* ============================================
+   DASHBOARD WRAPPER RESPONSIVE
+   ============================================ */
+@media (max-width: 1023px) {
+    .dashboard-wrapper {
+        flex-direction: column;
+    }
+}
+
+/* ============================================
+   ANALYTICS CHARTS RESPONSIVE
+   ============================================ */
+@media (max-width: 1023px) {
+    #revenueSpendChart,
+    #locationSalesChart,
+    #feedbackStarsChart {
+        max-height: 280px;
+    }
+}
+
+@media (max-width: 639px) {
+    #revenueSpendChart,
+    #locationSalesChart,
+    #feedbackStarsChart {
+        max-height: 220px;
+    }
+}
+
+/* ============================================
+   STOREFRONT CONTEXT SELECTOR BAR RESPONSIVE
+   ============================================ */
+@media (max-width: 1023px) {
+    /* The context bar is a flex row with space-between; let it wrap */
+    .glass-panel[style*="display:flex"][style*="justify-content:space-between"] {
+        flex-wrap: wrap !important;
+    }
+
+    /* Sales form section inside grid split */
+    #addSaleForm {
+        margin-bottom: 24px;
+    }
+}
+
+/* ============================================
+   TABLE CARD HEADER ROW RESPONSIVE
+   ============================================ */
+@media (max-width: 767px) {
+    .table-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* ============================================
+   CRM & CAMPAIGNS SECTION — COMPREHENSIVE
+   ============================================ */
+
+/* At 1199px and below (small laptop / tight) */
+@media (max-width: 1199px) {
+    /* CRM campaign workbench inputs: 3-col → 1-col */
+    #sect-crm .grid-crm-3-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Message editor + preview: stack vertically */
+    #sect-crm .grid-crm-split-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* CRM Leading Products & VIP Spenders grid: collapse to 1-col */
+    #sect-crm .grid-crm-2-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Settings 2-col inputs → 1-col */
+    #sect-settings .grid-2-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Batch action buttons wrap */
+    #sect-crm [style*="justify-content:space-between"][style*="align-items:center"] {
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+}
+
+/* At 1023px and below (tablet / hamburger menu) */
+@media (max-width: 1023px) {
+    /* Campaign audience composer wraps */
+    .campaign-composer {
+        flex-direction: column;
+    }
+
+    /* CRM metrics 4-col → 2-col */
+    #sect-crm .grid-4-col {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* CRM analytics split → stacked */
+    #sect-crm .grid-crm-2-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Workbench 3-col inputs → 1-col */
+    #sect-crm .grid-crm-3-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Message + preview stack */
+    #sect-crm .grid-crm-split-row {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Batch action footer wraps */
+    #sect-crm [style*="display:flex"][style*="justify-content:space-between"] {
+        flex-wrap: wrap !important;
+    }
+
+    /* CRM audience table scrolls */
+    #sect-crm .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* At 639px (mobile phone) */
+@media (max-width: 639px) {
+    /* CRM metrics 4-col → 1-col */
+    #sect-crm .grid-4-col {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Batch action buttons go full width */
+    #sect-crm [style*="display:flex"][style*="gap:12px"] {
+        flex-direction: column;
+        gap: 8px !important;
+    }
+
+    #sect-crm .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* CRM workbench panel compact */
+    #sect-crm .glass-panel[style*="padding: 24px"] {
+        padding: 16px !important;
+    }
+}
+
+/* ============================================
+   SETTINGS SECTION — COMPREHENSIVE
+   ============================================ */
+
+/* Settings panels: remove max-width constraint on smaller screens */
+@media (max-width: 1199px) {
+    #sect-settings .glass-panel[style*="max-width: 900px"] {
+        max-width: 100% !important;
+    }
+
+    /* Feature management header: stack button below title */
+    #sect-settings .glass-panel[style*="justify-content: space-between"] {
+        flex-wrap: wrap !important;
+        gap: 16px !important;
+    }
+
+    /* Location form 2-col → 1-col */
+    #sect-settings #addLocationForm [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Intl settings 2-col → 1-col */
+    #sect-settings #intlSettingsForm [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Settings grid auto-fit */
+    .settings-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    /* Settings toggle grid: 1 column */
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* All inner grids in settings go 1-col */
+    #sect-settings [style*="display: grid"][style*="grid-template-columns: 1fr 1fr"],
+    #sect-settings [style*="display:grid"][style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Panels full width on mobile */
+    #sect-settings .glass-panel {
+        max-width: 100% !important;
+        padding: 20px !important;
+    }
+
+    /* Button group in settings wraps */
+    #sect-settings [style*="display:flex"][style*="gap:12px"] {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 639px) {
+    /* Settings panels tighter */
+    #sect-settings .glass-panel {
+        padding: 16px !important;
+        margin-top: 16px !important;
+    }
+
+    /* Feature management button full width */
+    #sect-settings .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Location form action buttons full width */
+    #sect-settings [style*="display:flex"][style*="gap:12px"] {
+        flex-direction: column;
+    }
+
+    #sect-settings [style*="display:flex"][style*="gap:12px"] .btn {
+        width: 100%;
+    }
+
+    /* Publishing regions checkboxes wrap */
+    #sect-settings [style*="display: flex"][style*="gap: 24px"] {
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+}
+
+/* ============================================
+   ADMIN PANEL RESPONSIVE
+   ============================================ */
+@media (max-width: 1023px) {
+    /* Admin cards full width */
+    #adminPanelWrapper .main-content {
+        margin-left: 0;
+        padding: 84px 20px 24px 20px;
+    }
+}
+
+@media (max-width: 639px) {
+    #adminPanelWrapper .main-content {
+        padding: 72px 14px 20px 14px;
+    }
+
+    /* Admin card actions wrap */
+    .admin-card-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .admin-card-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ============================================
+   GLASS PANEL PADDING RESPONSIVE
+   ============================================ */
+@media (max-width: 639px) {
+    .glass-panel {
+        border-radius: var(--radius-sm);
+    }
+
+    /* Less padding in glass panels on mobile */
+    .glass-panel[style*="padding: 28px"],
+    .glass-panel[style*="padding: 32px"],
+    .glass-panel[style*="padding: 40px"] {
+        padding: 16px !important;
+    }
+}
+
+/* ============================================
+   SIDEBAR SCROLLABLE OVERFLOW
+   Key: brand stays sticky top, footer stays sticky bottom,
+   menu scrolls in the middle
+   ============================================ */
+@media (max-width: 1023px) {
+    /* On mobile, the sidebar is a fixed drawer:
+       override overflow-y so the sidebar itself doesn't scroll —
+       instead only the .sidebar-menu scrolls internally */
+    .sidebar {
+        overflow-y: hidden; /* Sidebar frame never scrolls */
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* The brand is flex-shrink:0 from dashboard.css — stays at top */
+    /* The footer is flex-shrink:0 from dashboard.css — stays at bottom */
+
+    /* Only the menu list scrolls */
+    .sidebar .sidebar-menu {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-grow: 1;
+        min-height: 0;
+    }
+
+    /* Sidebar menu items larger tap targets */
+    .sidebar-menu .menu-item {
+        padding: 14px 18px;
+        font-size: 0.95rem;
+    }
+}
+
+/* ============================================
+   QR CODE SECTION RESPONSIVE
+   ============================================ */
+@media (max-width: 1023px) {
+    .qr-container {
+        padding: 24px 16px;
+    }
+}
+
+@media (max-width: 639px) {
+    .qr-box {
+        padding: 16px;
+    }
+}
+
+/* ============================================
+   UTILITY — force wrap helper
+   ============================================ */
+.flex-wrap-responsive {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+    .hide-mobile {
+        display: none !important;
+    }
+
+    .show-mobile {
+        display: block !important;
+    }
+}
+
+@media (min-width: 640px) {
+    .show-mobile {
+        display: none !important;
+    }
+}
