@@ -3,12 +3,622 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leafy Dash | Elegant Custom Business Dashboards</title>
+    <title>Leafy Dash | Elegant Custom Business Operations Suite</title>
     <meta name="description" content="Generate a secure, tailored business dashboard. Auto-configure analytics, inventory, CRM, sales, and reviews based on your specific operational needs.">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="icon" type="image/png" href="/images/leafy_icon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-title: 'Playfair Display', Georgia, serif;
+            --font-sans: 'Outfit', system-ui, sans-serif;
+            --accent-green: #7ba884;
+            --accent-green-dark: #1e3a24;
+            --accent-green-light: #e8f0eb;
+            --accent-peach: #fdfaf6;
+            --accent-peach-dark: #f5eae0;
+            --accent-blue: #eef2f7;
+            --shadow-premium: 0 20px 40px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+            --transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--accent-peach);
+            color: var(--accent-green-dark);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Backgrounds */
+        .glow-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.45;
+            pointer-events: none;
+            animation: floatGlow 12s infinite alternate ease-in-out;
+        }
+
+        @keyframes floatGlow {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, -40px) scale(1.15); }
+        }
+
+        /* Scroll Reveal Styling */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: var(--transition-smooth);
+        }
+
+        .reveal-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hero Section Enhancements */
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 24px 140px 24px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            align-items: center;
+            gap: 48px;
+            position: relative;
+        }
+
+        @media (max-width: 968px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                padding-bottom: 80px;
+                text-align: center;
+            }
+            .hero-mockup-wrapper {
+                justify-content: center;
+            }
+        }
+
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        @media (max-width: 968px) {
+            .hero-left {
+                align-items: center;
+            }
+        }
+
+        .hero-title {
+            font-family: var(--font-title);
+            font-size: clamp(2.8rem, 5vw, 4.5rem);
+            line-height: 1.1;
+            font-weight: 700;
+            color: var(--accent-green-dark);
+            margin-bottom: 24px;
+        }
+
+        .hero-title span {
+            color: var(--accent-green);
+            font-style: italic;
+        }
+
+        .hero-desc {
+            font-size: clamp(1.1rem, 2.2vw, 1.25rem);
+            color: rgba(30, 58, 36, 0.8);
+            line-height: 1.6;
+            margin-bottom: 36px;
+            max-width: 580px;
+        }
+
+        /* Elegant Mockup Showcase */
+        .hero-mockup-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            position: relative;
+        }
+
+        .mockup-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 30px 60px rgba(44, 62, 53, 0.08);
+            border: 1px solid rgba(123, 168, 132, 0.15);
+            padding: 24px;
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            transform: perspective(1000px) rotateY(-8deg) rotateX(4deg);
+            transition: var(--transition-smooth);
+            animation: floatMockup 6s infinite alternate ease-in-out;
+        }
+
+        .mockup-card:hover {
+            transform: perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1.02);
+            box-shadow: 0 40px 80px rgba(44, 62, 53, 0.12);
+        }
+
+        @keyframes floatMockup {
+            0% { transform: perspective(1000px) rotateY(-8deg) rotateX(4deg) translateY(0); }
+            100% { transform: perspective(1000px) rotateY(-6deg) rotateX(2deg) translateY(-15px); }
+        }
+
+        /* Mockup inner components */
+        .mockup-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+        }
+        .mockup-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff5f56;
+        }
+        .mockup-dot:nth-child(2) { background: #ffbd2e; }
+        .mockup-dot:nth-child(3) { background: #27c93f; }
+
+        .mockup-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .mockup-box {
+            background: var(--accent-green-light);
+            border-radius: 8px;
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .mockup-bar {
+            height: 6px;
+            background: var(--accent-green);
+            opacity: 0.3;
+            border-radius: 3px;
+        }
+        .mockup-bar.short { width: 50%; }
+        .mockup-bar.medium { width: 75%; }
+        .mockup-bar.full { width: 100%; }
+
+        /* Feature Tabs Section */
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 56px auto;
+            padding: 0 24px;
+        }
+
+        .section-title {
+            font-family: var(--font-title);
+            font-size: clamp(2rem, 3.5vw, 2.75rem);
+            margin-bottom: 16px;
+            color: var(--accent-green-dark);
+        }
+
+        .tab-btn-row {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 40px;
+            padding: 0 24px;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(123, 168, 132, 0.2);
+            color: var(--accent-green-dark);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-green);
+            color: white;
+            border-color: var(--accent-green);
+            box-shadow: 0 10px 24px rgba(123, 168, 132, 0.25);
+        }
+
+        .tab-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            grid-template-columns: 1fr 1.1fr;
+            align-items: center;
+            gap: 56px;
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: var(--shadow-premium);
+            border: 1px solid rgba(123, 168, 132, 0.1);
+            animation: fadeInTab 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .tab-pane.active {
+            display: grid;
+        }
+
+        @media (max-width: 868px) {
+            .tab-pane {
+                grid-template-columns: 1fr;
+                padding: 32px 24px;
+                gap: 32px;
+            }
+        }
+
+        @keyframes fadeInTab {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-image-container {
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--accent-blue);
+            border: 1px solid rgba(0,0,0,0.03);
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.02);
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 280px;
+        }
+
+        /* Journey/Process Steps */
+        .journey-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        @media (max-width: 868px) {
+            .journey-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+
+        .journey-card {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(123, 168, 132, 0.15);
+            padding: 40px 32px;
+            border-radius: 20px;
+            position: relative;
+            transition: var(--transition-smooth);
+            text-align: center;
+        }
+
+        .journey-card:hover {
+            transform: translateY(-8px);
+            background: #ffffff;
+            box-shadow: var(--shadow-premium);
+            border-color: rgba(123, 168, 132, 0.3);
+        }
+
+        .journey-step {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 48px;
+            height: 48px;
+            background: var(--accent-green);
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 800;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 20px rgba(123, 168, 132, 0.3);
+        }
+
+        /* Pricing Section Toggle */
+        .pricing-toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--accent-green-light);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid rgba(123, 168, 132, 0.3);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--accent-green);
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        @media (max-width: 968px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+            }
+        }
+
+        .price-card {
+            background: #ffffff;
+            border: 1px solid rgba(123, 168, 132, 0.15);
+            border-radius: 24px;
+            padding: 44px 36px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: var(--transition-smooth);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.01);
+        }
+
+        .price-card.popular {
+            border: 2px solid var(--accent-green);
+            transform: scale(1.03);
+            box-shadow: var(--shadow-premium);
+        }
+
+        @media (max-width: 968px) {
+            .price-card.popular {
+                transform: scale(1);
+            }
+        }
+
+        .price-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-premium);
+            border-color: rgba(123, 168, 132, 0.3);
+        }
+
+        .price-card.popular:hover {
+            transform: translateY(-8px) scale(1.05);
+        }
+
+        @media (max-width: 968px) {
+            .price-card.popular:hover {
+                transform: translateY(-8px) scale(1.02);
+            }
+        }
+
+        .badge-popular {
+            position: absolute;
+            top: 20px;
+            right: 28px;
+            background: var(--accent-green-light);
+            color: #43824E;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .price-value {
+            font-family: var(--font-title);
+            font-size: 3.25rem;
+            font-weight: 700;
+            color: var(--accent-green-dark);
+            margin: 24px 0 8px 0;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .price-value span {
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-left: 6px;
+        }
+
+        .price-features {
+            list-style: none;
+            padding: 0;
+            margin: 32px 0 auto 0;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .price-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+        }
+
+        .price-features svg {
+            color: var(--accent-green);
+            flex-shrink: 0;
+        }
+
+        /* FAQ Section */
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .faq-item {
+            background: #ffffff;
+            border: 1px solid rgba(123, 168, 132, 0.15);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+        }
+
+        .faq-question {
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition-smooth);
+        }
+
+        .faq-question:hover {
+            color: var(--accent-green);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            padding: 0 32px;
+            color: rgba(30, 58, 36, 0.8);
+            line-height: 1.6;
+            font-size: 0.95rem;
+            transition: var(--transition-smooth);
+        }
+
+        .faq-item.active {
+            border-color: rgba(123, 168, 132, 0.35);
+            box-shadow: var(--shadow-premium);
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 200px;
+            padding-bottom: 24px;
+        }
+
+        .faq-icon {
+            transition: transform 0.4s ease;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+
+        /* Large CTA Banner */
+        .cta-banner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+        }
+
+        .cta-inner {
+            background: linear-gradient(135deg, var(--accent-green-dark) 0%, #0d1f14 100%);
+            border-radius: 32px;
+            padding: 80px 48px;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 30px 60px rgba(30, 58, 36, 0.25);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .cta-inner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(123, 168, 132, 0.15) 0%, transparent 60%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-family: var(--font-title);
+            font-size: clamp(2rem, 4vw, 3.25rem);
+            font-weight: 700;
+            margin-bottom: 18px;
+        }
+
+        .cta-desc {
+            color: rgba(255,255,255,0.75);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto 36px auto;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
+    <!-- Ambient Blur Background Blobs -->
+    <div class="glow-blob" style="width: 400px; height: 400px; background: rgba(123, 168, 132, 0.18); top: 15%; left: -10%;"></div>
+    <div class="glow-blob" style="width: 500px; height: 500px; background: rgba(244, 234, 224, 0.8); top: 40%; right: -15%; animation-delay: -3s;"></div>
+    <div class="glow-blob" style="width: 350px; height: 350px; background: rgba(123, 168, 132, 0.1); bottom: 10%; left: 20%; animation-delay: -6s;"></div>
+
+    <!-- Navigation Bar -->
     <header class="navbar">
         <a href="/" class="navbar-brand">
             <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 48px; height: 48px; object-fit: contain;">
@@ -20,71 +630,390 @@
         </div>
     </header>
 
-    <main class="hero-section">
-        <!-- SVG waves backgrounds in pastel blue and peach to replicate the style image -->
-        <svg class="wave-shape" style="top: 10%; left: -5%; width: 450px;" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M-80 120 C 50 180, 180 60, 320 200 C 420 300, 480 250, 520 380 L500 500 L-100 500 Z" fill="var(--accent-blue)" opacity="0.15"/>
-        </svg>
-        <svg class="wave-shape" style="bottom: 5%; right: -5%; width: 500px;" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M100 450 C 180 320, 320 380, 380 200 C 440 80, 490 120, 580 40 L600 600 L100 600 Z" fill="var(--accent-peach)" opacity="0.18"/>
-        </svg>
-
-        <div class="hero-badge">Organic Business Operations</div>
-        <h1 class="hero-title">Your Custom Business Dashboard. <br><span>Constructed for Growth.</span></h1>
-        <p class="hero-desc">Tell us about your business needs during onboarding, and instantly get a custom operational suite tailored to your metrics. Manage sales, inventory, QR code reviews, and customer relationships securely.</p>
-        <div style="display: flex; gap: 16px; margin-top: 10px; position: relative; z-index: 10;">
-            <a href="/register" class="btn btn-primary btn-lg" style="padding: 16px 36px; font-size: 1.05rem;">Get Started Now</a>
-            <a href="#features" class="btn btn-secondary btn-lg" style="padding: 16px 36px; font-size: 1.05rem;">Learn More</a>
+    <!-- HERO SECTION -->
+    <main class="hero-container">
+        <div class="hero-left">
+            <div class="hero-badge" style="margin-bottom: 20px;">ORGANIC OPERATIONS WORKSPACE</div>
+            <h1 class="hero-title">Your Custom Business Dashboard. <br><span>Constructed for Growth.</span></h1>
+            <p class="hero-desc">Tell us about your operations during onboarding, and instantly compile a custom management dashboard. Track locations, verify sales, check inventory, and broadcast marketing campaigns in one beautiful place.</p>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <a href="/register" class="btn btn-primary btn-lg" style="padding: 16px 36px; font-size: 1.05rem;">Get Started Now</a>
+                <a href="#features" class="btn btn-secondary btn-lg" style="padding: 16px 36px; font-size: 1.05rem;">Explore Features</a>
+            </div>
+        </div>
+        <div class="hero-mockup-wrapper">
+            <div class="mockup-card">
+                <div class="mockup-header">
+                    <div class="mockup-dot"></div>
+                    <div class="mockup-dot"></div>
+                    <div class="mockup-dot"></div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">leafydash.com/dashboard</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 18px;">
+                    <span style="font-weight:700; font-size: 0.95rem;">Operational Summary</span>
+                    <span style="font-size: 0.8rem; background: var(--accent-green-light); color:#43824E; padding: 2px 8px; border-radius: 4px; font-weight:600;">Live</span>
+                </div>
+                <div class="mockup-row">
+                    <div class="mockup-box">
+                        <span style="font-size: 0.65rem; color: var(--text-secondary);">REVENUE</span>
+                        <span style="font-size: 1.25rem; font-weight:800;">$18,450</span>
+                        <div class="mockup-bar full" style="margin-top: 4px;"></div>
+                    </div>
+                    <div class="mockup-box">
+                        <span style="font-size: 0.65rem; color: var(--text-secondary);">SPENDS</span>
+                        <span style="font-size: 1.25rem; font-weight:800;">$4,120</span>
+                        <div class="mockup-bar medium" style="margin-top: 4px;"></div>
+                    </div>
+                </div>
+                <div class="mockup-box" style="margin-bottom: 12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size: 0.65rem; color: var(--text-secondary);">NET PROFIT MARGIN</span>
+                        <span style="font-size: 0.75rem; font-weight:700; color:#43824E;">↑ 77.6%</span>
+                    </div>
+                    <div class="mockup-bar full" style="height: 8px; background: var(--accent-green); opacity: 0.6; margin-top: 6px;"></div>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.75rem; padding-top:10px; border-top: 1px solid rgba(0,0,0,0.06);">
+                    <span>System Status: Healthy</span>
+                    <div style="width: 8px; height: 8px; border-radius:50%; background:#27c93f;"></div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <section id="features" class="features-grid">
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            </div>
-            <h3 class="feat-title">Overview & Analytics</h3>
-            <p class="feat-desc">Get a bird's-eye view of your metrics. Live profit charts, spend trends, and conversion metrics calculated dynamically.</p>
+    <!-- INTERACTIVE FEATURES SECTION -->
+    <section id="features" style="padding: 100px 0; background: rgba(255, 255, 255, 0.45); border-top: 1px solid rgba(123, 168, 132, 0.1); border-bottom: 1px solid rgba(123, 168, 132, 0.1);">
+        <div class="section-header reveal-on-scroll">
+            <div class="hero-badge">OPERATIONAL SUITE</div>
+            <h2 class="section-title">One Dashboard. All Your Business Modules.</h2>
+            <p style="color: var(--text-secondary);">Select a module below to inspect the customized features built directly into your operational dashboard.</p>
         </div>
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
-            </div>
-            <h3 class="feat-title">Multi-Location Sales</h3>
-            <p class="feat-desc">Track transactions across multiple branch locations or online storefronts. View detailed invoice and purchasing logs.</p>
+
+        <div class="tab-btn-row reveal-on-scroll">
+            <button class="tab-btn active" id="btn-analytics" onclick="showFeatureTab('analytics')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                Overview & Analytics
+            </button>
+            <button class="tab-btn" id="btn-inventory" onclick="showFeatureTab('inventory')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                Smart Inventory
+            </button>
+            <button class="tab-btn" id="btn-reviews" onclick="showFeatureTab('reviews')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                QR Reviews & Feedback
+            </button>
+            <button class="tab-btn" id="btn-crm" onclick="showFeatureTab('crm')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                CRM & Campaigns
+            </button>
         </div>
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+
+        <div class="tab-container reveal-on-scroll">
+            <!-- TAB 1: ANALYTICS -->
+            <div class="tab-pane active" id="pane-analytics">
+                <div class="tab-image-container">
+                    <div style="width: 100%; display:flex; flex-direction:column; gap:12px;">
+                        <div style="height: 12px; background: rgba(0,0,0,0.05); border-radius: 6px; width: 40%;"></div>
+                        <div style="height: 80px; background: linear-gradient(90deg, rgba(123, 168, 132, 0.2) 0%, transparent 100%); border-radius: 8px;"></div>
+                        <div style="display:flex; gap:10px;">
+                            <div style="height: 40px; background: rgba(0,0,0,0.03); border-radius: 6px; flex:1;"></div>
+                            <div style="height: 40px; background: rgba(0,0,0,0.03); border-radius: 6px; flex:1;"></div>
+                            <div style="height: 40px; background: rgba(0,0,0,0.03); border-radius: 6px; flex:1;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 1.85rem; margin-top:0; margin-bottom: 16px;">Live Financial Charts & Status Tracking</h3>
+                    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px;">Observe real-time operating metrics at a glance. Chart.js integration draws live profit/revenue streams, storefront trends, conversion statistics, and system latency metrics calculated dynamically.</p>
+                    <ul style="padding:0; list-style:none; display:flex; flex-direction:column; gap:12px;">
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Real-time profit-margin trackers</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Live server metrics & latency checking</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Regional settings and base currency switches</li>
+                    </ul>
+                </div>
             </div>
-            <h3 class="feat-title">Smart Inventory</h3>
-            <p class="feat-desc">Track product stock levels, set low-stock indicators automatically, and add new SKU items with ease.</p>
-        </div>
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+
+            <!-- TAB 2: INVENTORY -->
+            <div class="tab-pane" id="pane-inventory">
+                <div class="tab-image-container">
+                    <div style="width: 100%; display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div style="height: 12px; background: rgba(0,0,0,0.05); border-radius: 6px; width: 30%;"></div>
+                            <div style="height: 20px; background: #e2f3e5; width: 60px; border-radius:4px;"></div>
+                        </div>
+                        <div style="height: 1px; background: rgba(0,0,0,0.05);"></div>
+                        <div style="display:flex; gap:16px; align-items:center;">
+                            <div style="width: 64px; height: 64px; border-radius: 8px; background: rgba(0,0,0,0.05); flex-shrink:0;"></div>
+                            <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                                <div style="height: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; width: 80%;"></div>
+                                <div style="height: 8px; background: rgba(0,0,0,0.03); border-radius: 4px; width: 40%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 1.85rem; margin-top:0; margin-bottom: 16px;">Multi-Store Stock & Product Management</h3>
+                    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px;">Switch locations dynamically to view local storefront catalogs. Manage item quantities, configure low-stock indicators, upload images, and search items by name or SKU instantly.</p>
+                    <ul style="padding:0; list-style:none; display:flex; flex-direction:column; gap:12px;">
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Low-stock warning flags</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Automatically subtracts stock on cart checkouts</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Image uploading and SKU organization</li>
+                    </ul>
+                </div>
             </div>
-            <h3 class="feat-title">QR Feedback & CRM</h3>
-            <p class="feat-desc">Generate print-ready QR codes for reviews. Unhappy reviews feed straight into your CRM leads to fix client issues instantly.</p>
-        </div>
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+
+            <!-- TAB 3: REVIEWS -->
+            <div class="tab-pane" id="pane-reviews">
+                <div class="tab-image-container">
+                    <div style="width: 100%; text-align:center; display:flex; flex-direction:column; gap:12px; align-items:center;">
+                        <span style="font-size:3rem; line-height:1; color:#fbbf24;">★ ★ ★ ★ ★</span>
+                        <div style="height: 10px; background: rgba(0,0,0,0.05); border-radius: 5px; width: 60%;"></div>
+                        <div style="height: 30px; background: var(--accent-green); border-radius:15px; width: 120px; margin-top:8px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 1.85rem; margin-top:0; margin-bottom: 16px;">Secure Customer QR Reviews & Logic</h3>
+                    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px;">Print location-specific QR codes. Verify checkout purchase histories in the backend database to prevent review bombing, ensuring only verified customers leave ratings.</p>
+                    <ul style="padding:0; list-style:none; display:flex; flex-direction:column; gap:12px;">
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Purchase verification blocking</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> 1-2 star ratings auto-generate CRM leads</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Live review sync stream inside the dashboard</li>
+                    </ul>
+                </div>
             </div>
-            <h3 class="feat-title">Customer Lifetime Directories</h3>
-            <p class="feat-desc">Track billing records, purchasing frequencies, and contact details for all active customers in a single database.</p>
-        </div>
-        <div class="feat-card glass-panel">
-            <div class="feat-icon-container">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+
+            <!-- TAB 4: CRM -->
+            <div class="tab-pane" id="pane-crm">
+                <div class="tab-image-container">
+                    <div style="width: 100%; display:flex; flex-direction:column; gap:10px;">
+                        <div style="height: 12px; background: rgba(0,0,0,0.05); border-radius: 6px; width: 50%;"></div>
+                        <div style="border: 1px dashed var(--accent-green); padding:16px; border-radius:8px; display:flex; gap:12px; align-items:center;">
+                            <div style="width:32px; height:32px; background:var(--accent-green); border-radius:50%;"></div>
+                            <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                                <div style="height: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; width: 70%;"></div>
+                                <div style="height: 6px; background: rgba(0,0,0,0.03); border-radius: 3px; width: 30%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 1.85rem; margin-top:0; margin-bottom: 16px;">Target Marketing Broadcasts & LTV Directories</h3>
+                    <p style="line-height: 1.6; color: var(--text-secondary); margin-bottom: 24px;">Manage customer records, compute lifetime value logs, and segment audiences. Broadcast promotions (WhatsApp, Email, or Printable flyers) with persistent tracking statistics.</p>
+                    <ul style="padding:0; list-style:none; display:flex; flex-direction:column; gap:12px;">
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> WhatsApp, Email, & Print template engines</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Persistent campaign logs and detailing</li>
+                        <li style="display:flex; align-items:center; gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Lifetime value & purchasing frequency ledgers</li>
+                    </ul>
+                </div>
             </div>
-            <h3 class="feat-title">Secure Modular Setup</h3>
-            <p class="feat-desc">Toggle modules on or off dynamically inside settings. Auto-rebuild sidebars instantly based on your preferences.</p>
         </div>
     </section>
 
-    <footer style="text-align: center; padding: 40px 24px; color: var(--text-secondary); border-top: 1px solid var(--border-color); font-size: 0.9rem;">
+    <!-- OPERATIONAL JOURNEY (HOW IT WORKS) -->
+    <section style="padding: 100px 0; position: relative;">
+        <div class="section-header reveal-on-scroll">
+            <div class="hero-badge">THE WORKFLOW</div>
+            <h2 class="section-title">How Leafy Dash Constructs Your Board</h2>
+            <p style="color: var(--text-secondary);">A three-step streamlined journey to convert onboarding inputs into a custom-built dashboard application.</p>
+        </div>
+
+        <div class="journey-grid reveal-on-scroll">
+            <div class="journey-card">
+                <div class="journey-step">1</div>
+                <h3 style="margin-top: 16px; margin-bottom: 12px; font-family: var(--font-sans); font-size:1.2rem; font-weight:700;">Onboarding Setup</h3>
+                <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">Register and select modular preferences. Choose which metrics, storefront systems, and campaign modules you need.</p>
+            </div>
+            <div class="journey-card">
+                <div class="journey-step">2</div>
+                <h3 style="margin-top: 16px; margin-bottom: 12px; font-family: var(--font-sans); font-size:1.2rem; font-weight:700;">Dynamic Construction</h3>
+                <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">Our engine compiles database migrations and updates your sidebar layout automatically. Only your active modules build.</p>
+            </div>
+            <div class="journey-card">
+                <div class="journey-step">3</div>
+                <h3 style="margin-top: 16px; margin-bottom: 12px; font-family: var(--font-sans); font-size:1.2rem; font-weight:700;">Manage & Grow</h3>
+                <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6;">Log transactions, examine trends, handle verified client reviews, and scale your brand with robust analytical feedback.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTERACTIVE PRICING SECTION -->
+    <section style="padding: 100px 0; background: rgba(255, 255, 255, 0.45); border-top: 1px solid rgba(123, 168, 132, 0.1); border-bottom: 1px solid rgba(123, 168, 132, 0.1);">
+        <div class="section-header reveal-on-scroll">
+            <div class="hero-badge">PRICING</div>
+            <h2 class="section-title">Fair, Transparent Pricing Plans</h2>
+            <p style="color: var(--text-secondary);">Select the scale of operation that fits your organization. Switch below to unlock discount structures on yearly billing.</p>
+        </div>
+
+        <div class="pricing-toggle-container reveal-on-scroll">
+            <span style="font-weight: 600;">Monthly Billing</span>
+            <label class="switch">
+                <input type="checkbox" id="billingToggle" onchange="handleBillingToggle()">
+                <span class="slider"></span>
+            </label>
+            <span style="font-weight: 600; color: var(--accent-green);">Yearly Billing <span style="font-size: 0.75rem; background: var(--accent-green-light); padding:2px 8px; border-radius:4px; margin-left:4px;">Save 25%</span></span>
+        </div>
+
+        <div class="pricing-grid reveal-on-scroll">
+            <!-- Tier 1: Free Starter -->
+            <div class="price-card">
+                <h3 style="font-family:var(--font-sans); font-size: 1.25rem; font-weight:700; margin:0;">Free Starter</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">Great for exploring features.</p>
+                <div class="price-value" id="price-starter">$0<span>/ month</span></div>
+                <a href="/register" class="btn btn-secondary btn-block" style="margin-top: 24px; border-radius: var(--radius-sm);">Start Free Trial</a>
+                <ul class="price-features">
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> 1 Storefront Location</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> 20 Product SKUs</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Basic Analytics & Charts</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> QR feedback system active</li>
+                </ul>
+            </div>
+
+            <!-- Tier 2: Growth -->
+            <div class="price-card popular">
+                <div class="badge-popular">MOST POPULAR</div>
+                <h3 style="font-family:var(--font-sans); font-size: 1.25rem; font-weight:700; margin:0; color: var(--accent-green-dark);">Growth Plan</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">Tailored for growing operations.</p>
+                <div class="price-value" id="price-growth">$39<span class="billing-period">/ month</span></div>
+                <a href="/register" class="btn btn-primary btn-block" style="margin-top: 24px; border-radius: var(--radius-sm);">Start Free Trial</a>
+                <ul class="price-features">
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Up to 5 Branch Locations</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Unlimited Product SKUs</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Advanced Retention & Charts</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Full CRM Campaign log modules</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Email & WhatsApp Broadcasts</li>
+                </ul>
+            </div>
+
+            <!-- Tier 3: Enterprise -->
+            <div class="price-card">
+                <h3 style="font-family:var(--font-sans); font-size: 1.25rem; font-weight:700; margin:0;">Enterprise</h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:8px;">For extensive operations.</p>
+                <div class="price-value" id="price-enterprise">$119<span class="billing-period">/ month</span></div>
+                <a href="/register" class="btn btn-secondary btn-block" style="margin-top: 24px; border-radius: var(--radius-sm);">Start Free Trial</a>
+                <ul class="price-features">
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Unlimited Store Locations</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Custom SLA Support agreements</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Dedicated account manager support</li>
+                    <li><svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/></svg> Priority access to newly compiled features</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- INTERACTIVE FAQ SECTION -->
+    <section style="padding: 100px 0; position: relative;">
+        <div class="section-header reveal-on-scroll">
+            <div class="hero-badge">FAQ</div>
+            <h2 class="section-title">Common Queries Answered</h2>
+            <p style="color: var(--text-secondary);">Here are some answers regarding dynamic configurations, security protocols, and deployments.</p>
+        </div>
+
+        <div class="faq-container reveal-on-scroll">
+            <div class="faq-item" id="faq-0">
+                <div class="faq-question" onclick="toggleFaq(0)">
+                    Is my system data secure and private?
+                    <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <div class="faq-answer">
+                    Yes. Leafy Dash operates on secure JWT authentication models, handles encrypted database connections, and enforces strict client/server validations to block cross-site scripting (XSS) and unauthorized requests.
+                </div>
+            </div>
+
+            <div class="faq-item" id="faq-1">
+                <div class="faq-question" onclick="toggleFaq(1)">
+                    How do reviews prevent rating spam or bombs?
+                    <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <div class="faq-answer">
+                    The backend verifies if the client leaving a review has a logged transaction history linked to their customer email/phone record. If no invoice match is found, the submission is securely declined.
+                </div>
+            </div>
+
+            <div class="faq-item" id="faq-2">
+                <div class="faq-question" onclick="toggleFaq(2)">
+                    Can I toggle modules on and off dynamically?
+                    <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <div class="faq-answer">
+                    Yes. In the Settings configuration module, you can turn modules (such as Inventory, Sales Log, QR Reviews) on or off. Our engine immediately updates the database flags and alters your sidebar UI on-the-fly.
+                </div>
+            </div>
+
+            <div class="faq-item" id="faq-3">
+                <div class="faq-question" onclick="toggleFaq(3)">
+                    Where is my store data stored when deployed?
+                    <svg class="faq-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <div class="faq-answer">
+                    By default, the project runs on local SQLite. When deployed to a server environment (like Render or Railway), we support PostgreSQL connections. Simply add your database URL to the server environment variables.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CALL TO ACTION BANNER -->
+    <section class="cta-banner" style="padding-bottom: 120px;">
+        <div class="cta-inner reveal-on-scroll">
+            <h2 class="cta-title">Build Your Custom Hub Today.</h2>
+            <p class="cta-desc">Join hundreds of business owners who manage location metrics, customer relationships, and marketing campaigns in one beautiful, integrated workplace.</p>
+            <a href="/register" class="btn btn-secondary btn-lg" style="padding: 16px 40px; font-size:1.05rem; background:#ffffff; color:var(--accent-green-dark); box-shadow: 0 15px 30px rgba(0,0,0,0.1);">Get Started Now</a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer style="text-align: center; padding: 60px 24px; color: var(--text-secondary); border-top: 1px solid var(--border-color); font-size: 0.95rem; background: var(--accent-peach-dark);">
         <p>&copy; 2026 Leafy Dash. All rights reserved. Elegant business workspace construction.</p>
     </footer>
+
+    <!-- INTERACTION LOGIC & ACCORDIONS -->
+    <script>
+        // Feature Tab Switcher
+        function showFeatureTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            
+            document.getElementById('btn-' + tabId).classList.add('active');
+            document.getElementById('pane-' + tabId).classList.add('active');
+        }
+
+        // Billing Mode Toggle
+        function handleBillingToggle() {
+            const isYearly = document.getElementById('billingToggle').checked;
+            
+            const priceGrowth = document.getElementById('price-growth');
+            const priceEnterprise = document.getElementById('price-enterprise');
+            
+            if (isYearly) {
+                priceGrowth.innerHTML = '$29<span class="billing-period">/ month (billed annually)</span>';
+                priceEnterprise.innerHTML = '$89<span class="billing-period">/ month (billed annually)</span>';
+            } else {
+                priceGrowth.innerHTML = '$39<span class="billing-period">/ month</span>';
+                priceEnterprise.innerHTML = '$119<span class="billing-period">/ month</span>';
+            }
+        }
+
+        // FAQ Collapse Toggle
+        function toggleFaq(index) {
+            const item = document.getElementById('faq-' + index);
+            item.classList.toggle('active');
+        }
+
+        // Scroll Reveal Intersection Observer
+        document.addEventListener('DOMContentLoaded', () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.05,
+                rootMargin: '0px 0px -40px 0px'
+            });
+
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
 </body>
 </html>
