@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import os
+import traceback
 
 from .database import engine, Base
 from .routers import auth, admin, onboarding, dashboard
@@ -46,6 +47,15 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)
 app.include_router(dashboard.router)
+
+# ── Global exception handler (surfaces real errors for debugging) ─────────────
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}", "traceback": tb},
+    )
 
 # ── Static file directories ───────────────────────────────────────────────────
 upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
