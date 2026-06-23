@@ -225,6 +225,7 @@ class SaleCreate(BaseModel):
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_phone: Optional[str] = None
+    customer_address: Optional[str] = None
     promo_code: Optional[str] = None
     items: List[SaleItemCreate]
 
@@ -236,6 +237,7 @@ class SaleOut(BaseModel):
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_phone: Optional[str] = None
+    customer_address: Optional[str] = None
     promo_code: Optional[str] = None
     timestamp: datetime
     items: List[SaleItemOut]
@@ -431,3 +433,84 @@ class AdminMessageOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class EmployeeCreate(BaseModel):
+    name: str
+    role: str
+    salary: float
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    status: Optional[str] = "Active"
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Employee name cannot be empty")
+        return stripped
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Employee role cannot be empty")
+        return stripped
+
+    @field_validator("salary")
+    @classmethod
+    def validate_salary(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("Salary cannot be negative")
+        return value
+
+
+class EmployeeOut(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    role: str
+    salary: float
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OperationalExpenseCreate(BaseModel):
+    category: str
+    amount: float
+    description: Optional[str] = None
+
+    @field_validator("category")
+    @classmethod
+    def validate_category(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Category cannot be empty")
+        return stripped
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("Amount cannot be negative")
+        return value
+
+
+class OperationalExpenseOut(BaseModel):
+    id: int
+    user_id: int
+    category: str
+    amount: float
+    description: Optional[str] = None
+    date: datetime
+
+    class Config:
+        from_attributes = True
+

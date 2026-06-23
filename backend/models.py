@@ -24,6 +24,8 @@ class User(Base):
     contact_messages = relationship("ContactMessage", back_populates="user", cascade="all, delete-orphan")
     admin_messages = relationship("AdminMessage", back_populates="user", cascade="all, delete-orphan")
     marketing_campaigns = relationship("MarketingCampaign", back_populates="user", cascade="all, delete-orphan")
+    employees = relationship("Employee", back_populates="user", cascade="all, delete-orphan")
+    expenses = relationship("OperationalExpense", back_populates="user", cascade="all, delete-orphan")
 
 
 class UserAnswers(Base):
@@ -121,6 +123,7 @@ class Sale(Base):
     customer_name = Column(String, nullable=True)
     customer_email = Column(String, nullable=True)
     customer_phone = Column(String, nullable=True)
+    customer_address = Column(String, nullable=True)
     promo_code = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -188,4 +191,34 @@ class CampaignCustomerTracking(Base):
 
     campaign = relationship("MarketingCampaign", back_populates="tracking_records")
     sale = relationship("Sale")
+
+
+class Employee(Base):
+    __tablename__ = "employees"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    salary = Column(Float, nullable=False)
+    email = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    status = Column(String, default="Active")  # Active, Suspended, Inactive
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="employees")
+
+
+class OperationalExpense(Base):
+    __tablename__ = "operational_expenses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    category = Column(String, nullable=False)  # Rent, Utilities, Software, Marketing, etc.
+    amount = Column(Float, nullable=False)
+    description = Column(String, nullable=True)
+    date = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="expenses")
+
 

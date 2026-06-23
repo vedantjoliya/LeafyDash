@@ -95,11 +95,81 @@
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 1200px;
             margin-top: 20px;
             margin-bottom: 40px;
             display: none; /* revealed after fetch */
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Redesigned Multi-Item Split Cart Layout */
+        .checkout-split-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 24px;
+            align-items: start;
+            margin-top: 24px;
+        }
+
+        .catalog-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cart-column {
+            padding: 24px;
+            position: sticky;
+            top: 20px;
+        }
+
+        .promo-cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--color-accent-light);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(123, 168, 132, 0.15);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        .promo-cart-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .promo-cart-item-name {
+            font-weight: 700;
+            color: var(--color-primary-dark);
+        }
+
+        .promo-cart-item-qty {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+
+        .promo-cart-item-remove {
+            background: none;
+            border: none;
+            color: var(--color-danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+            padding: 0 4px;
+            font-weight: bold;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .checkout-split-layout {
+                grid-template-columns: 1fr;
+            }
+            .cart-column {
+                position: static;
+            }
         }
 
         @keyframes slideUp {
@@ -580,14 +650,62 @@
                 <h3>Storefront Location</h3>
                 <p>Select your preferred local store context to view current stock inventories.</p>
             </div>
-            <select id="locationSelector" class="location-select" onchange="filterProductsByLocation()">
+            <select id="locationSelector" class="location-select" onchange="handleLocationChange()">
                 <!-- Dynamic locations options -->
             </select>
         </div>
 
-        <!-- Products Grid -->
-        <div id="productsGrid" class="products-grid">
-            <!-- Dynamic product cards -->
+        <!-- Checkout Split Layout -->
+        <div class="checkout-split-layout">
+            <!-- Left: Product Catalog -->
+            <div class="catalog-column">
+                <div id="productsGrid" class="products-grid">
+                    <!-- Dynamic product cards -->
+                </div>
+            </div>
+            <!-- Right: Cart & Checkout Form -->
+            <div class="cart-column glass-panel">
+                <h3 style="font-family: var(--font-title); font-size: 1.25rem; margin-bottom: 16px; color: var(--color-primary-dark);">Your Shopping Cart</h3>
+                
+                <div id="promoCartItems" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px; max-height:240px; overflow-y:auto; padding-right:4px;">
+                    <p style="color:var(--color-text-secondary); text-align:center; padding:20px 0; font-size:0.85rem;">No items in cart.</p>
+                </div>
+                
+                <div class="summary-card" style="margin-bottom:20px;">
+                    <div class="summary-row" style="margin-bottom:6px;">
+                        <span>Subtotal</span>
+                        <span id="promo-subtotal">0,00 €</span>
+                    </div>
+                    <div class="summary-row" style="margin-bottom:6px;">
+                        <span>Applied Coupon</span>
+                        <span id="promo-coupon-badge" style="color: var(--color-accent); font-weight:700;">None</span>
+                    </div>
+                    <div class="summary-row" id="promo-discount-row" style="display:none; color: var(--color-danger); margin-bottom:6px;">
+                        <span>Discount Applied</span>
+                        <span id="promo-discount">- 0,00 €</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Grand Total</span>
+                        <span id="promo-total">0,00 €</span>
+                    </div>
+                </div>
+                
+                <form id="promoCheckoutForm" onsubmit="submitPromoCheckout(event)" style="display:flex; flex-direction:column; gap:12px;">
+                    <div class="form-group">
+                        <label for="promoCheckoutName" class="form-label">Full Name *</label>
+                        <input type="text" id="promoCheckoutName" class="form-control" placeholder="e.g. Jane Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="promoCheckoutPhone" class="form-label">Phone Number *</label>
+                        <input type="text" id="promoCheckoutPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="promoCheckoutAddress" class="form-label">Delivery Address *</label>
+                        <textarea id="promoCheckoutAddress" class="form-control" rows="2" placeholder="e.g. 123 Maple St, London" required style="resize:vertical;"></textarea>
+                    </div>
+                    <button type="submit" id="promoCheckoutBtn" class="btn-submit" style="margin-top: 10px;">Place Order</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -603,57 +721,6 @@
         <button type="button" class="btn-select" style="margin-top: 10px;" onclick="window.close()">Close Window</button>
     </div>
 
-    <!-- Checkout Modal -->
-    <div id="checkout-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 id="checkout-prod-name">Confirm Order</h3>
-                <button type="button" class="close-btn" onclick="closeCheckout()">&times;</button>
-            </div>
-            <form id="checkoutForm" onsubmit="submitCheckout(event)">
-                <input type="hidden" id="checkout-prod-id" value="">
-                <div class="modal-body">
-                    <div class="summary-card">
-                        <div class="summary-row">
-                            <span>Selected Item</span>
-                            <strong id="summary-name">Product Name</strong>
-                        </div>
-                        <div class="summary-row">
-                            <span>Price Per Unit</span>
-                            <strong id="summary-unit-price">$0.00</strong>
-                        </div>
-                        <div class="summary-row">
-                            <span>Applied Promo Coupon</span>
-                            <strong id="summary-coupon" style="color: var(--color-accent);">N/A</strong>
-                        </div>
-                        <div class="summary-row total">
-                            <span>Grand Total</span>
-                            <span id="summary-total-price">$0.00</span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="checkoutQty" class="form-label">Order Quantity</label>
-                        <input type="number" id="checkoutQty" class="form-control" min="1" value="1" oninput="updateSummaryTotal()" required>
-                        <span id="checkoutStockWarn" style="font-size: 0.75rem; color: var(--color-danger); display:none;">Maximum stock reached.</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="checkoutName" class="form-label">Your Name</label>
-                        <input type="text" id="checkoutName" class="form-control" placeholder="e.g. John Doe" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="checkoutPhone" class="form-label">Your Phone Number</label>
-                        <input type="text" id="checkoutPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
-                    </div>
-
-                    <button type="submit" class="btn-submit" style="margin-top: 10px;">Place Order</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <footer>
         <p>&copy; 2026 LeafyDash Checkout. Secured & Encrypted.</p>
     </footer>
@@ -661,7 +728,7 @@
     <!-- JS Logic -->
     <script>
         let promoInfo = null;
-        let selectedProduct = null;
+        let promoCart = [];
 
         function getDiscountedPrice(price) {
             if (!promoInfo || !promoInfo.discount_type || promoInfo.discount_value === null) {
@@ -741,6 +808,13 @@
 
             // Initial catalog load
             filterProductsByLocation();
+            renderPromoCart();
+        }
+
+        function handleLocationChange() {
+            promoCart = [];
+            renderPromoCart();
+            filterProductsByLocation();
         }
 
         function filterProductsByLocation() {
@@ -768,12 +842,18 @@
                         <div class="product-info">
                             <div class="product-meta">
                                 <span class="product-sku">SKU: ${p.sku || 'N/A'}</span>
-                                <span class="product-stock">${p.stock} remaining</span>
+                                <span class="product-stock" id="stock-val-${p.id}">${p.stock} remaining</span>
                             </div>
                             <h4 class="product-name">${escapeHtml(p.name)}</h4>
-                            <div class="product-footer">
-                                ${priceHtml}
-                                <button type="button" class="btn-select" onclick="openCheckout(${p.id})">Order Now</button>
+                            <div class="product-footer" style="flex-direction:column; gap:12px; align-items:stretch;">
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    ${priceHtml}
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                    <label class="form-label" style="margin:0; font-size:0.75rem; white-space:nowrap;">Qty:</label>
+                                    <input type="number" id="qty-input-${p.id}" class="form-control" min="1" max="${p.stock}" value="1" style="width:70px; padding:4px 8px; margin:0; height:32px;">
+                                    <button type="button" class="btn-select" style="flex-grow:1; padding:6px 12px; margin:0; height:32px;" onclick="addToPromoCart(${p.id})">Add to Cart</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -781,78 +861,126 @@
             }).join('');
         }
 
-        function openCheckout(productId) {
-            selectedProduct = promoInfo.products.find(p => p.id === productId);
-            if (!selectedProduct) return;
-
-            document.getElementById('checkout-prod-id').value = selectedProduct.id;
-            document.getElementById('checkout-prod-name').textContent = `Order ${selectedProduct.name}`;
-            document.getElementById('summary-name').textContent = selectedProduct.name;
+        function addToPromoCart(productId) {
+            const product = promoInfo.products.find(p => p.id === productId);
+            if (!product) return;
             
-            const discPrice = getDiscountedPrice(selectedProduct.price);
-            if (discPrice < selectedProduct.price) {
-                document.getElementById('summary-unit-price').innerHTML = `<span style="text-decoration: line-through; color: var(--color-text-secondary); font-size: 0.9em; font-weight: normal; margin-right: 6px;">${formatCurrency(selectedProduct.price)}</span> <span style="color: #43824E;">${formatCurrency(discPrice)}</span>`;
-            } else {
-                document.getElementById('summary-unit-price').textContent = formatCurrency(selectedProduct.price);
+            const qtyInput = document.getElementById(`qty-input-${productId}`);
+            const qtyToAdd = parseInt(qtyInput.value) || 1;
+            
+            if (qtyToAdd < 1) {
+                alert("Quantity must be at least 1");
+                return;
             }
-            document.getElementById('summary-coupon').textContent = promoInfo.coupon_code || 'None';
             
-            const qtyInput = document.getElementById('checkoutQty');
-            qtyInput.value = 1;
-            qtyInput.max = selectedProduct.stock;
+            if (qtyToAdd > product.stock) {
+                alert(`Insufficient stock. Only ${product.stock} units available.`);
+                return;
+            }
             
-            updateSummaryTotal();
+            const existingCartItem = promoCart.find(item => item.product_id === productId);
+            if (existingCartItem) {
+                const totalQty = existingCartItem.quantity + qtyToAdd;
+                if (totalQty > product.stock) {
+                    alert(`Cannot add more. Only ${product.stock} units in stock and you already have ${existingCartItem.quantity} in your cart.`);
+                    return;
+                }
+                existingCartItem.quantity = totalQty;
+            } else {
+                promoCart.push({
+                    product_id: productId,
+                    name: product.name,
+                    price: product.price,
+                    quantity: qtyToAdd,
+                    stock: product.stock
+                });
+            }
             
-            document.getElementById('checkout-modal').style.display = 'flex';
+            qtyInput.value = 1; // reset input
+            renderPromoCart();
         }
 
-        function closeCheckout() {
-            document.getElementById('checkout-modal').style.display = 'none';
-            selectedProduct = null;
+        function removeFromPromoCart(productId) {
+            promoCart = promoCart.filter(item => item.product_id !== productId);
+            renderPromoCart();
         }
 
-        function updateSummaryTotal() {
-            if (!selectedProduct) return;
-            const qtyInput = document.getElementById('checkoutQty');
-            let qty = parseInt(qtyInput.value) || 1;
+        function renderPromoCart() {
+            const container = document.getElementById('promoCartItems');
+            if (!container) return;
             
-            // Check boundaries
-            if (qty > selectedProduct.stock) {
-                qty = selectedProduct.stock;
-                qtyInput.value = qty;
-                document.getElementById('checkoutStockWarn').style.display = 'inline';
-            } else {
-                document.getElementById('checkoutStockWarn').style.display = 'none';
+            if (promoCart.length === 0) {
+                container.innerHTML = '<p style="color:var(--color-text-secondary); text-align:center; padding:20px 0; font-size:0.85rem;">No items in cart.</p>';
+                document.getElementById('promo-subtotal').textContent = formatCurrency(0);
+                document.getElementById('promo-coupon-badge').textContent = 'None';
+                document.getElementById('promo-discount-row').style.display = 'none';
+                document.getElementById('promo-total').textContent = formatCurrency(0);
+                return;
             }
-            if (qty < 1) {
-                qty = 1;
-                qtyInput.value = 1;
-            }
-
-            const total = selectedProduct.price * qty;
-            const discPrice = getDiscountedPrice(selectedProduct.price);
-            const discTotal = discPrice * qty;
             
-            const totalDisplay = document.getElementById('summary-total-price');
-            if (discTotal < total) {
-                totalDisplay.innerHTML = `<span style="text-decoration: line-through; color: var(--color-text-secondary); font-size: 0.9em; font-weight: normal; margin-right: 6px;">${formatCurrency(total)}</span> <span style="color: #43824E;">${formatCurrency(discTotal)}</span>`;
+            container.innerHTML = promoCart.map(item => `
+                <div class="promo-cart-item">
+                    <div class="promo-cart-item-info">
+                        <span class="promo-cart-item-name">${escapeHtml(item.name)}</span>
+                        <span class="promo-cart-item-qty">${item.quantity} x ${formatCurrency(item.price)}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <strong style="color: var(--color-primary-dark); font-size:0.85rem;">${formatCurrency(item.price * item.quantity)}</strong>
+                        <button type="button" class="promo-cart-item-remove" onclick="removeFromPromoCart(${item.product_id})">&times;</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Calculate totals
+            let subtotal = 0;
+            promoCart.forEach(item => {
+                subtotal += item.price * item.quantity;
+            });
+            
+            document.getElementById('promo-subtotal').textContent = formatCurrency(subtotal);
+            
+            // Coupon & Discount details
+            if (promoInfo.coupon_code) {
+                document.getElementById('promo-coupon-badge').textContent = promoInfo.coupon_code;
+                
+                let discount = 0;
+                if (promoInfo.discount_type === 'percentage' && promoInfo.discount_value !== null) {
+                    discount = subtotal * (promoInfo.discount_value / 100);
+                } else if (promoInfo.discount_type === 'amount' && promoInfo.discount_value !== null) {
+                    discount = Math.min(subtotal, promoInfo.discount_value);
+                }
+                
+                if (discount > 0) {
+                    document.getElementById('promo-discount').textContent = `- ${formatCurrency(discount)}`;
+                    document.getElementById('promo-discount-row').style.display = 'flex';
+                    document.getElementById('promo-total').textContent = formatCurrency(subtotal - discount);
+                } else {
+                    document.getElementById('promo-discount-row').style.display = 'none';
+                    document.getElementById('promo-total').textContent = formatCurrency(subtotal);
+                }
             } else {
-                totalDisplay.textContent = formatCurrency(total);
+                document.getElementById('promo-coupon-badge').textContent = 'None';
+                document.getElementById('promo-discount-row').style.display = 'none';
+                document.getElementById('promo-total').textContent = formatCurrency(subtotal);
             }
         }
 
-        async function submitCheckout(event) {
+        async function submitPromoCheckout(event) {
             event.preventDefault();
+            
+            if (promoCart.length === 0) {
+                alert("Please add at least one item to your cart before placing an order.");
+                return;
+            }
+            
             const c = getQueryParam('c');
             const e = getQueryParam('e');
-            
-            const prodId = parseInt(document.getElementById('checkout-prod-id').value);
-            const qty = parseInt(document.getElementById('checkoutQty').value);
             const locId = parseInt(document.getElementById('locationSelector').value);
-            const custName = document.getElementById('checkoutName').value;
-            const custPhone = document.getElementById('checkoutPhone').value;
+            const custName = document.getElementById('promoCheckoutName').value;
+            const custPhone = document.getElementById('promoCheckoutPhone').value;
+            const custAddress = document.getElementById('promoCheckoutAddress').value;
 
-            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('promoCheckoutBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = "Processing order...";
 
@@ -863,16 +991,21 @@
                     body: JSON.stringify({
                         campaign_id: parseInt(c),
                         email: e,
-                        product_id: prodId,
-                        quantity: qty,
                         location_id: locId,
                         customer_name: custName,
-                        customer_phone: custPhone
+                        customer_phone: custPhone,
+                        customer_address: custAddress,
+                        items: promoCart.map(item => ({
+                            product_id: item.product_id,
+                            quantity: item.quantity
+                        }))
                     })
                 });
 
                 if (res.ok) {
-                    closeCheckout();
+                    promoCart = [];
+                    renderPromoCart();
+                    document.getElementById('promoCheckoutForm').reset();
                     document.getElementById('main-container').style.display = 'none';
                     document.getElementById('success-panel').style.display = 'flex';
                 } else {

@@ -2111,17 +2111,10 @@
                 document.getElementById('val-profit').textContent = formatCurrency(data.metrics.profit);
                 document.getElementById('val-rating').textContent = `${data.metrics.avg_rating} / 5`;
                 
-                // Update Stock Capacity indicators dynamically
-                const stockBar = document.getElementById('stockCapBar');
-                const stockVal = document.getElementById('stockCapVal');
-                if (stockBar && stockVal) {
-                    const capacityPct = Math.min(100, Math.max(10, data.metrics.stock_count / 4));
-                    stockBar.style.width = `${capacityPct}%`;
-                    stockVal.textContent = `${data.metrics.stock_count} Total Items`;
-                }
-                
-                // Render chart
+                // Render charts
                 renderOverviewChart(data.chart);
+                if (data.location_sales) renderLocationSalesBarChart(data.location_sales);
+                if (data.expense_breakdown) renderExpenseBreakdownDoughnutChart(data.expense_breakdown);
             } catch(e) {
                 console.error("Overview data load error", e);
             }
@@ -2190,12 +2183,18 @@
                 const data = await res.json();
                 
                 // Update metrics elements
-                document.getElementById('val-conversion').textContent = `${data.conversion_rate}%`;
                 document.getElementById('val-products-sold').textContent = `${data.total_products_sold} units`;
                 
+                let totalValuation = 0.0;
+                (data.products.all_data || []).forEach(p => {
+                    totalValuation += (p.stock || 0) * (p.price || 0.0);
+                });
+                document.getElementById('val-stock-valuation').textContent = formatCurrency(totalValuation);
+                
                 // Draw charts
-                renderLocationSalesChart(data.locations);
                 renderProductPerformanceChart(data.products);
+                if (data.customers) renderTopCustomersSpendingChart(data.customers);
+                if (data.stock_values) renderProductStockValueChart(data.stock_values);
 
                 // Populate products performance table
                 const tbody = document.getElementById('analyticsProductsTableBody');
@@ -2224,17 +2223,47 @@
             }
         }
 
-        function renderLocationSalesChart(locData) {
-            const ctx = document.getElementById('locationSalesChart').getContext('2d');
-            if (locationSalesChartInstance) locationSalesChartInstance.destroy();
+        // --- Overview Custom Charts ---
+        function renderLocationSalesBarChart(locData) {
+            const ctx = document.getElementById('locationSalesBarChart').getContext('2d');
+            if (locationSalesBarChartInstance) locationSalesBarChartInstance.destroy();
             
-            locationSalesChartInstance = new Chart(ctx, {
-                type: 'doughnut',
+            locationSalesBarChartInstance = new Chart(ctx, {
+                type: 'bar',
                 data: {
                     labels: locData.labels,
                     datasets: [{
+                        label: `Revenue (${getCurrencySymbol()})`,
                         data: locData.data,
-                        backgroundColor: ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981'],
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { display: false } },
+                        y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(15, 23, 42, 0.06)' } }
+                    }
+                }
+            });
+        }
+
+        function renderExpenseBreakdownDoughnutChart(expData) {
+            const ctx = document.getElementById('expenseBreakdownDoughnutChart').getContext('2d');
+            if (expenseBreakdownDoughnutChartInstance) expenseBreakdownDoughnutChartInstance.destroy();
+            
+            expenseBreakdownDoughnutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: expData.labels,
+                    datasets: [{
+                        data: expData.data,
+                        backgroundColor: ['#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#a855f7', '#6366f1'],
                         borderWidth: 0
                     }]
                 },
@@ -2465,6 +2494,7 @@
             document.getElementById('saleCustomerName').value = sale.customer_name || '';
             document.getElementById('saleCustomerEmail').value = sale.customer_email || '';
             document.getElementById('saleCustomerPhone').value = sale.customer_phone || '';
+            document.getElementById('saleCustomerAddress').value = sale.customer_address || '';
             
             // Set invoice total preview to the sale amount
             document.getElementById('saleInvoiceTotalDisplay').textContent = formatCurrency(sale.amount);
@@ -3876,12 +3906,17 @@
                     <label class="form-label">Phone Number</label>
                     <input type="text" id="editCustomerPhone" class="form-control" value="${escapeHtml(client.phone || '')}">
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Delivery Address</label>
+                    <input type="text" id="editCustomerAddress" class="form-control" value="${escapeHtml(client.address || '')}">
+                </div>
             `;
 
             openEditModal("Edit Customer Profile", formHtml, async () => {
                 const name = document.getElementById('editCustomerName').value;
                 const newEmail = document.getElementById('editCustomerEmail').value;
                 const phone = document.getElementById('editCustomerPhone').value;
+                const address = document.getElementById('editCustomerAddress').value;
 
                 const token = localStorage.getItem('user_token');
                 try {
@@ -3891,7 +3926,7 @@
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ name, email: newEmail, phone })
+                        body: JSON.stringify({ name, email: newEmail, phone, address })
                     });
                     if (res.ok) {
                         closeEditModal();
@@ -4139,6 +4174,9 @@
                 const customer_phone = document.getElementById('saleCustomerPhone').value;
                 const promo_code = document.getElementById('salePromoCode').value.trim() || null;
 
+                const customer_address = document.getElementById('saleCustomerAddress').value;
+                const promo_code = document.getElementById('salePromoCode').value.trim() || null;
+
                 if (editingSaleId) {
                     try {
                         const res = await fetch(`/api/dashboard/sales/${editingSaleId}`, {
@@ -4151,7 +4189,8 @@
                                 location_id,
                                 customer_name,
                                 customer_email,
-                                customer_phone
+                                customer_phone,
+                                customer_address
                             })
                         });
                         
@@ -4186,6 +4225,7 @@
                                 customer_name,
                                 customer_email,
                                 customer_phone,
+                                customer_address,
                                 promo_code,
                                 items: currentSaleCart.map(item => ({
                                     product_id: item.product_id,
@@ -4637,6 +4677,298 @@
             }
         }
         
+        // --- OPERATIONS MODULE CONTROLLERS ---
+        let employeesCache = [];
+        let expensesCache = [];
+
+        async function loadOperationsData() {
+            const token = localStorage.getItem('user_token');
+            try {
+                // Fetch Budget Calculation
+                const resBudget = await fetch('/api/dashboard/operations/budget', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resBudget.ok) {
+                    const budget = await resBudget.json();
+                    document.getElementById('ops-val-revenue').textContent = formatCurrency(budget.revenue);
+                    document.getElementById('ops-val-payroll').textContent = formatCurrency(budget.payroll_costs);
+                    document.getElementById('ops-val-expenses').textContent = formatCurrency(budget.operating_expenses);
+                    
+                    const netProfitEl = document.getElementById('ops-val-net-profit');
+                    netProfitEl.textContent = formatCurrency(budget.net_profit);
+                    if (budget.net_profit >= 0) {
+                        netProfitEl.style.color = 'var(--accent-green)';
+                    } else {
+                        netProfitEl.style.color = 'var(--danger)';
+                    }
+                }
+                
+                // Fetch Employees Table
+                const resEmp = await fetch('/api/dashboard/operations/employees', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resEmp.ok) {
+                    employeesCache = await resEmp.json();
+                    renderEmployeesTable(employeesCache);
+                }
+                
+                // Fetch Expenses Table
+                const resExp = await fetch('/api/dashboard/operations/expenses', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resExp.ok) {
+                    expensesCache = await resExp.json();
+                    renderExpensesTable(expensesCache);
+                }
+            } catch(e) {
+                console.error("Operations Hub loading failure:", e);
+            }
+        }
+
+        function renderEmployeesTable(employees) {
+            const tbody = document.getElementById('employeesListTableBody');
+            if (!tbody) return;
+            if (employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">No employee records found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = employees.map(emp => {
+                let badgeClass = 'badge-success';
+                if (emp.status === 'Suspended') badgeClass = 'badge-warning';
+                if (emp.status === 'Inactive') badgeClass = 'badge-danger';
+                
+                return `
+                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                        <td style="padding:10px 14px; font-weight:600; color:var(--text-primary);">${escapeHtml(emp.name)}</td>
+                        <td style="padding:10px 14px; color:var(--text-secondary);">${escapeHtml(emp.role)}</td>
+                        <td style="padding:10px 14px; font-weight:600; color:var(--text-primary);">${formatCurrency(emp.salary)}</td>
+                        <td style="padding:10px 14px; color:var(--text-secondary);">${escapeHtml(emp.email || 'N/A')}</td>
+                        <td style="padding:10px 14px; color:var(--text-secondary);">${escapeHtml(emp.phone || 'N/A')}</td>
+                        <td style="padding:10px 14px; text-align:center;">
+                            <span class="badge ${badgeClass}" style="padding: 2px 6px; font-size: 0.65rem; border-radius: 4px;">${emp.status}</span>
+                        </td>
+                        <td style="padding:10px 14px; text-align:center;">
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button type="button" onclick="editEmployee(${emp.id})" class="icon-btn icon-btn-edit" title="Edit Employee" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                                </button>
+                                <button type="button" onclick="deleteEmployee(${emp.id})" class="icon-btn icon-btn-delete" title="Delete Employee" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderExpensesTable(expenses) {
+            const tbody = document.getElementById('expensesListTableBody');
+            if (!tbody) return;
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No operational spends logged yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = expenses.map(exp => {
+                return `
+                    <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                        <td style="padding:10px 14px; font-weight:600; color:var(--text-primary);">${escapeHtml(exp.category)}</td>
+                        <td style="padding:10px 14px; font-weight:600; color:var(--text-primary);">${formatCurrency(exp.amount)}</td>
+                        <td style="padding:10px 14px; color:var(--text-secondary);">${escapeHtml(exp.description || 'N/A')}</td>
+                        <td style="padding:10px 14px; color:var(--text-muted); font-size:0.8rem;">${formatDateTime(exp.date)}</td>
+                        <td style="padding:10px 14px; text-align:center;">
+                            <div style="display:flex; gap:6px; justify-content:center;">
+                                <button type="button" onclick="editExpense(${exp.id})" class="icon-btn icon-btn-edit" title="Edit Expense" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                                </button>
+                                <button type="button" onclick="deleteExpense(${exp.id})" class="icon-btn icon-btn-delete" title="Delete Expense" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function saveEmployee(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('user_token');
+            const name = document.getElementById('empName').value;
+            const role = document.getElementById('empRole').value;
+            const salary = parseFloat(document.getElementById('empSalary').value);
+            const email = document.getElementById('empEmail').value || null;
+            const phone = document.getElementById('empPhone').value || null;
+            const status = document.getElementById('empStatus').value;
+            const editingId = document.getElementById('editingEmployeeId').value;
+            
+            const payload = { name, role, salary, email, phone, status };
+            
+            try {
+                let res;
+                if (editingId) {
+                    res = await fetch(`/api/dashboard/operations/employees/${editingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    res = await fetch('/api/dashboard/operations/employees', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                if (res.ok) {
+                    cancelEditEmployee();
+                    await loadOperationsData();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.detail || "Failed to save employee."));
+                }
+            } catch(err) {
+                console.error("Save employee error", err);
+            }
+        }
+
+        function editEmployee(empId) {
+            const emp = employeesCache.find(e => e.id === empId);
+            if (!emp) return;
+            
+            document.getElementById('editingEmployeeId').value = emp.id;
+            document.getElementById('empName').value = emp.name;
+            document.getElementById('empRole').value = emp.role;
+            document.getElementById('empSalary').value = emp.salary;
+            document.getElementById('empEmail').value = emp.email || '';
+            document.getElementById('empPhone').value = emp.phone || '';
+            document.getElementById('empStatus').value = emp.status;
+            
+            document.getElementById('employeeFormTitle').textContent = "Edit Employee Details";
+            document.getElementById('empSubmitBtn').textContent = "Update Employee";
+            document.getElementById('empCancelBtn').style.display = "block";
+            
+            document.getElementById('employeeFormTitle').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEditEmployee() {
+            document.getElementById('editingEmployeeId').value = '';
+            document.getElementById('addEmployeeForm').reset();
+            document.getElementById('employeeFormTitle').textContent = "Add Active Employee";
+            document.getElementById('empSubmitBtn').textContent = "Save Employee";
+            document.getElementById('empCancelBtn').style.display = "none";
+        }
+
+        async function deleteEmployee(empId) {
+            if (!confirm("Are you sure you want to delete this employee?")) return;
+            const token = localStorage.getItem('user_token');
+            try {
+                const res = await fetch(`/api/dashboard/operations/employees/${empId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    await loadOperationsData();
+                } else {
+                    alert("Failed to delete employee.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function saveExpense(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('user_token');
+            const category = document.getElementById('expCategory').value;
+            const amount = parseFloat(document.getElementById('expAmount').value);
+            const description = document.getElementById('expDescription').value || null;
+            const editingId = document.getElementById('editingExpenseId').value;
+            
+            const payload = { category, amount, description };
+            
+            try {
+                let res;
+                if (editingId) {
+                    res = await fetch(`/api/dashboard/operations/expenses/${editingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                } else {
+                    res = await fetch('/api/dashboard/operations/expenses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                if (res.ok) {
+                    cancelEditExpense();
+                    await loadOperationsData();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + (err.detail || "Failed to save expense."));
+                }
+            } catch(err) {
+                console.error("Save expense error", err);
+            }
+        }
+
+        function editExpense(expId) {
+            const exp = expensesCache.find(e => e.id === expId);
+            if (!exp) return;
+            
+            document.getElementById('editingExpenseId').value = exp.id;
+            document.getElementById('expCategory').value = exp.category;
+            document.getElementById('expAmount').value = exp.amount;
+            document.getElementById('expDescription').value = exp.description || '';
+            
+            document.getElementById('expenseFormTitle').textContent = "Edit Operational Spend";
+            document.getElementById('expSubmitBtn').textContent = "Update Spend";
+            document.getElementById('expCancelBtn').style.display = "block";
+            
+            document.getElementById('expenseFormTitle').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEditExpense() {
+            document.getElementById('editingExpenseId').value = '';
+            document.getElementById('addExpenseForm').reset();
+            document.getElementById('expenseFormTitle').textContent = "Log Operational Spend";
+            document.getElementById('expSubmitBtn').textContent = "Log Expense";
+            document.getElementById('expCancelBtn').style.display = "none";
+        }
+
+        async function deleteExpense(expId) {
+            if (!confirm("Are you sure you want to delete this expense?")) return;
+            const token = localStorage.getItem('user_token');
+            try {
+                const res = await fetch(`/api/dashboard/operations/expenses/${expId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    await loadOperationsData();
+                } else {
+                    alert("Failed to delete expense.");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
         // Mobile sidebar closing and overlay bindings
         document.addEventListener('DOMContentLoaded', () => {
             const overlay = document.querySelector('.sidebar-overlay');

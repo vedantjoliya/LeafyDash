@@ -32,18 +32,19 @@ app.include_router(onboarding.router)
 app.include_router(dashboard.router)
 
 # Mount Static Directories for CSS/JS assets if they exist
+upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
 try:
     os.makedirs("frontend/css", exist_ok=True)
     os.makedirs("frontend/js", exist_ok=True)
     os.makedirs("frontend/images", exist_ok=True)
-    os.makedirs("uploads", exist_ok=True)
+    os.makedirs(upload_dir, exist_ok=True)
 except Exception as e:
     print(f"Directory creation skipped (read-only file system): {e}")
 
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
 app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 app.mount("/images", StaticFiles(directory="frontend/images"), name="images")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 # Frontend Page Routes (Serving HTML files securely)
 @app.get("/")

@@ -7,8 +7,8 @@ import os
 import shutil
 import uuid
 from ..database import get_db
-from ..models import User, ActiveModule, Product, Review, Sale, SaleItem, UserAnswers, Location, ContactMessage, AdminMessage, MarketingCampaign, CampaignCustomerTracking
-from ..schemas import ProductCreate, ProductOut, ReviewCreate, ReviewOut, SaleCreate, SaleOut, ModuleStatus, LocationCreate, LocationOut, LocationUpdate, ProfileUpdate, ContactMessageCreate, AdminMessageOut, MarketingCampaignCreate, MarketingCampaignOut, CampaignCustomerTrackingOut
+from ..models import User, ActiveModule, Product, Review, Sale, SaleItem, UserAnswers, Location, ContactMessage, AdminMessage, MarketingCampaign, CampaignCustomerTracking, Employee, OperationalExpense
+from ..schemas import ProductCreate, ProductOut, ReviewCreate, ReviewOut, SaleCreate, SaleOut, ModuleStatus, LocationCreate, LocationOut, LocationUpdate, ProfileUpdate, ContactMessageCreate, AdminMessageOut, MarketingCampaignCreate, MarketingCampaignOut, CampaignCustomerTrackingOut, EmployeeCreate, EmployeeOut, OperationalExpenseCreate, OperationalExpenseOut
 from ..auth import get_current_active_user, get_password_hash
 
 router = APIRouter(tags=["Dashboard Operations"])
@@ -99,7 +99,7 @@ def get_dashboard_config(
     
     # If no configuration, provide a default layout
     if not modules:
-        defaults = ["Overview", "Analytics", "Sales", "Inventory", "Reviews", "CRM", "Customers", "Inbox", "Settings"]
+        defaults = ["Overview", "Analytics", "Sales", "Inventory", "Reviews", "CRM", "Customers", "Inbox", "Operations", "Settings"]
         for mod in defaults:
             db.add(ActiveModule(user_id=current_user.id, module_name=mod, is_active=True))
         db.commit()
@@ -112,6 +112,14 @@ def get_dashboard_config(
         db.add(inbox_mod)
         db.commit()
         modules.append(inbox_mod)
+
+    # Ensure Operations module exists for older registered shops
+    has_operations = any(m.module_name == "Operations" for m in modules)
+    if not has_operations and modules:
+        ops_mod = ActiveModule(user_id=current_user.id, module_name="Operations", is_active=True)
+        db.add(ops_mod)
+        db.commit()
+        modules.append(ops_mod)
         
     return modules
 
@@ -168,10 +176,15 @@ def get_overview_data(
     sales = db.query(Sale).filter(Sale.user_id == current_user.id).all()
     products = db.query(Product).filter(Product.user_id == current_user.id).all()
     reviews = db.query(Review).filter(Review.user_id == current_user.id).all()
+    employees = db.query(Employee).filter(Employee.user_id == current_user.id).all()
+    expenses = db.query(OperationalExpense).filter(OperationalExpense.user_id == current_user.id).all()
     
     total_revenue = sum(s.amount for s in sales)
-    # Mock some spend values for charts
-    total_spend = total_revenue * 0.42
+    
+    # Calculate actual spends
+    payroll_sum = sum(e.salary for e in employees if e.status == "Active")
+    total_expenses = sum(exp.amount for exp in expenses)
+    total_spend = payroll_sum + total_expenses
     profit = total_revenue - total_spend
     
     avg_rating = 0.0
@@ -194,7 +207,38 @@ def get_overview_data(
             if s.timestamp.date() == day
         )
         revenue_trend.append(round(day_revenue, 2))
-        spend_trend.append(round(day_revenue * 0.42, 2))
+        
+        # Calculate actual expenses for this day
+        day_expense = sum(
+            exp.amount for exp in expenses
+            if exp.date.date() == day
+        )
+        # Plus proportional daily payroll cost
+        day_payroll = payroll_sum / 30.0
+        spend_trend.append(round(day_expense + day_payroll, 2))
+        
+    # Location sales data
+    loc_sales = {}
+    for s in sales:
+        loc_label = s.location or "Online"
+        loc_sales[loc_label] = loc_sales.get(loc_label, 0.0) + s.amount
+    
+    location_sales = {
+        "labels": list(loc_sales.keys()) if loc_sales else ["Online"],
+        "data": [round(v, 2) for v in loc_sales.values()] if loc_sales else [0.0]
+    }
+    
+    # Expense category breakdown
+    categories_map = {}
+    if payroll_sum > 0:
+        categories_map["Payroll"] = payroll_sum
+    for exp in expenses:
+        categories_map[exp.category] = categories_map.get(exp.category, 0.0) + exp.amount
+        
+    expense_breakdown = {
+        "labels": list(categories_map.keys()),
+        "data": [round(v, 2) for v in categories_map.values()]
+    }
         
     return {
         "user_id": current_user.id,
@@ -213,7 +257,9 @@ def get_overview_data(
             "labels": chart_labels,
             "revenue": revenue_trend,
             "spend": spend_trend
-        }
+        },
+        "location_sales": location_sales,
+        "expense_breakdown": expense_breakdown
     }
 
 # --- 2. Analytics Endpoints ---
@@ -271,6 +317,27 @@ def get_analytics_data(
     
     total_units_sold = sum(p["units_sold"] for p in product_list)
     
+    # Top 5 customer spends
+    customer_spends = {}
+    for s in sales:
+        email = s.customer_email or "walkin@example.com"
+        name = s.customer_name or "Walk-in Customer"
+        key = (email.strip().lower(), name)
+        customer_spends[key] = customer_spends.get(key, 0.0) + s.amount
+    
+    sorted_customer_spends = sorted(customer_spends.items(), key=lambda x: x[1], reverse=True)[:5]
+    customer_labels = [item[0][1] for item in sorted_customer_spends]
+    customer_data = [round(item[1], 2) for item in sorted_customer_spends]
+    
+    # Product stock values
+    product_stock_values = []
+    for p in products:
+        val = p.price * p.stock
+        product_stock_values.append((p.name, val))
+    sorted_stock_values = sorted(product_stock_values, key=lambda x: x[1], reverse=True)[:5]
+    stock_labels = [item[0] for item in sorted_stock_values]
+    stock_data = [round(item[1], 2) for item in sorted_stock_values]
+    
     return {
         "locations": {
             "labels": location_labels if location_labels else ["Online"],
@@ -282,8 +349,15 @@ def get_analytics_data(
             "revenues": product_revenues,
             "all_data": product_list_sorted
         },
-        "conversion_rate": 3.4,
-        "total_products_sold": total_units_sold
+        "total_products_sold": total_units_sold,
+        "customers": {
+            "labels": customer_labels if customer_labels else ["No Customers"],
+            "data": customer_data if customer_data else [0.0]
+        },
+        "stock_values": {
+            "labels": stock_labels if stock_labels else ["No Stock"],
+            "data": stock_data if stock_data else [0.0]
+        }
     }
 
 # --- 3. Sales Endpoints ---
@@ -390,6 +464,7 @@ def add_sale(
         customer_name=sale_data.customer_name or "Walk-in Customer",
         customer_email=sale_data.customer_email or "walkin@example.com",
         customer_phone=sale_data.customer_phone or "N/A",
+        customer_address=sale_data.customer_address,
         promo_code=sale_data.promo_code,
         items=sale_items
     )
@@ -513,8 +588,9 @@ def add_product(
     if image and image.filename:
         ext = os.path.splitext(image.filename)[1]
         filename = f"{uuid.uuid4()}{ext}"
-        os.makedirs("uploads", exist_ok=True)
-        file_path = os.path.join("uploads", filename)
+        upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
         image_path = f"/uploads/{filename}"
@@ -572,6 +648,8 @@ def update_product(
         if product.image_path:
             try:
                 old_path = product.image_path.lstrip('/')
+                if os.getenv("VERCEL"):
+                    old_path = old_path.replace("uploads", "/tmp/uploads", 1)
                 if os.path.exists(old_path):
                     os.remove(old_path)
             except Exception as e:
@@ -579,8 +657,9 @@ def update_product(
                 
         ext = os.path.splitext(image.filename)[1]
         filename = f"{uuid.uuid4()}{ext}"
-        os.makedirs("uploads", exist_ok=True)
-        file_path = os.path.join("uploads", filename)
+        upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
         product.image_path = f"/uploads/{filename}"
@@ -606,6 +685,8 @@ def delete_product(
     if product.image_path:
         try:
             img_path = product.image_path.lstrip('/')
+            if os.getenv("VERCEL"):
+                img_path = img_path.replace("uploads", "/tmp/uploads", 1)
             if os.path.exists(img_path):
                 os.remove(img_path)
         except Exception as e:
@@ -1134,13 +1215,12 @@ def public_promo_buy(
 ):
     campaign_id = payload.get("campaign_id")
     email = payload.get("email")
-    product_id = payload.get("product_id")
-    quantity = payload.get("quantity", 1)
     location_id = payload.get("location_id")
     customer_name = payload.get("customer_name", "Valued Customer")
     customer_phone = payload.get("customer_phone", "N/A")
+    customer_address = payload.get("customer_address")
     
-    if not campaign_id or not email or not product_id or not location_id:
+    if not campaign_id or not email or not location_id:
         raise HTTPException(status_code=400, detail="Missing required checkout details")
         
     email_clean = email.strip().lower()
@@ -1155,48 +1235,73 @@ def public_promo_buy(
     if not tracking:
         raise HTTPException(status_code=403, detail="Verification failed. Invalid promotion access.")
         
-    product = db.query(Product).filter(
-        Product.id == product_id,
-        Product.user_id == campaign.user_id
-    ).first()
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+    # Standardize items selection
+    items_to_process = []
+    if "items" in payload:
+        items_to_process = payload["items"]
+    else:
+        product_id = payload.get("product_id")
+        quantity = payload.get("quantity", 1)
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Missing product_id or items array")
+        items_to_process = [{"product_id": product_id, "quantity": quantity}]
         
-    if product.location_id != location_id:
-         raise HTTPException(status_code=400, detail="Product does not belong to the selected storefront location")
-         
-    if product.stock < quantity:
-        raise HTTPException(status_code=400, detail=f"Insufficient stock. Only {product.stock} units available.")
+    if not items_to_process:
+        raise HTTPException(status_code=400, detail="A sale must contain at least one item.")
         
-    product.stock -= quantity
-    total_amount = product.price * quantity
+    total_invoice_amount = 0.0
+    sale_items = []
     
+    for item_payload in items_to_process:
+        pid = item_payload.get("product_id")
+        qty = item_payload.get("quantity", 1)
+        
+        product = db.query(Product).filter(
+            Product.id == pid,
+            Product.user_id == campaign.user_id
+        ).first()
+        if not product:
+            raise HTTPException(status_code=404, detail=f"Product with ID {pid} not found")
+            
+        if product.location_id != location_id:
+            raise HTTPException(status_code=400, detail=f"Product '{product.name}' does not belong to the selected storefront location")
+            
+        if product.stock < qty:
+            raise HTTPException(status_code=400, detail=f"Insufficient stock for product '{product.name}'. Only {product.stock} units available.")
+            
+        product.stock -= qty
+        item_amount = product.price * qty
+        total_invoice_amount += item_amount
+        
+        sale_item = SaleItem(
+            product_id=product.id,
+            quantity=qty,
+            amount=item_amount,
+            item_name=product.name
+        )
+        sale_items.append(sale_item)
+        
+    # Apply discount
     if campaign.discount_type == "percentage" and campaign.discount_value is not None:
-        total_amount = total_amount * (1.0 - (campaign.discount_value / 100.0))
+        total_invoice_amount = total_invoice_amount * (1.0 - (campaign.discount_value / 100.0))
     elif campaign.discount_type == "amount" and campaign.discount_value is not None:
-        total_amount = max(0.0, total_amount - campaign.discount_value)
-    total_amount = round(total_amount, 2)
+        total_invoice_amount = max(0.0, total_invoice_amount - campaign.discount_value)
+    total_invoice_amount = round(total_invoice_amount, 2)
     
     loc = db.query(Location).filter(Location.id == location_id).first()
     loc_name = loc.name if loc else "Storefront"
     
-    sale_item = SaleItem(
-        product_id=product.id,
-        quantity=quantity,
-        amount=total_amount,
-        item_name=product.name
-    )
-    
     new_sale = Sale(
         user_id=campaign.user_id,
         location_id=location_id,
-        amount=total_amount,
+        amount=total_invoice_amount,
         location=loc_name,
         customer_name=customer_name,
         customer_email=email_clean,
         customer_phone=customer_phone,
+        customer_address=customer_address,
         promo_code=campaign.coupon_code,
-        items=[sale_item]
+        items=sale_items
     )
     db.add(new_sale)
     db.commit()
@@ -1229,6 +1334,7 @@ def get_customers(
         name = s.customer_name or "Walk-in Customer"
         email = s.customer_email or "walkin@example.com"
         phone = s.customer_phone or "N/A"
+        address = s.customer_address or ""
         key = email.strip().lower()
         
         last_item = "N/A"
@@ -1242,6 +1348,7 @@ def get_customers(
                 "name": name,
                 "email": email,
                 "phone": phone,
+                "address": address,
                 "purchases_count": purchases_count,
                 "total_spend": s.amount,
                 "last_purchased": last_item,
@@ -1251,6 +1358,8 @@ def get_customers(
             customers_map[key]["purchases_count"] += purchases_count
             customers_map[key]["total_spend"] += s.amount
             customers_map[key]["last_purchased"] = last_item
+            if address and not customers_map[key]["address"]:
+                customers_map[key]["address"] = address
 
     # Add promo tracking info for each customer email
     for key, c_info in customers_map.items():
@@ -1293,6 +1402,7 @@ def update_customer(
     new_name = payload.get("name")
     new_email = payload.get("email")
     new_phone = payload.get("phone")
+    new_address = payload.get("address")
     
     for s in sales:
         if new_name is not None:
@@ -1301,6 +1411,8 @@ def update_customer(
             s.customer_email = new_email
         if new_phone is not None:
             s.customer_phone = new_phone
+        if new_address is not None:
+            s.customer_address = new_address
             
     db.commit()
     return {"message": "Customer updated successfully"}
@@ -1414,3 +1526,179 @@ def delete_inbox_message(
     db.delete(msg)
     db.commit()
     return {"message": "Message deleted successfully"}
+
+
+# --- 10. Operations (Employees, Expenses & Budget) Endpoints ---
+
+@router.get("/api/dashboard/operations/employees", response_model=List[EmployeeOut])
+def get_employees(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    return db.query(Employee).filter(Employee.user_id == current_user.id).all()
+
+
+@router.post("/api/dashboard/operations/employees", response_model=EmployeeOut)
+def add_employee(
+    employee_data: EmployeeCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    new_emp = Employee(
+        user_id=current_user.id,
+        name=employee_data.name,
+        role=employee_data.role,
+        salary=employee_data.salary,
+        email=employee_data.email,
+        phone=employee_data.phone,
+        status=employee_data.status or "Active"
+    )
+    db.add(new_emp)
+    db.commit()
+    db.refresh(new_emp)
+    return new_emp
+
+
+@router.put("/api/dashboard/operations/employees/{employee_id}", response_model=EmployeeOut)
+def update_employee(
+    employee_id: int,
+    employee_data: EmployeeCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    emp = db.query(Employee).filter(
+        Employee.id == employee_id,
+        Employee.user_id == current_user.id
+    ).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    emp.name = employee_data.name
+    emp.role = employee_data.role
+    emp.salary = employee_data.salary
+    emp.email = employee_data.email
+    emp.phone = employee_data.phone
+    if employee_data.status is not None:
+        emp.status = employee_data.status
+        
+    db.commit()
+    db.refresh(emp)
+    return emp
+
+
+@router.delete("/api/dashboard/operations/employees/{employee_id}")
+def delete_employee(
+    employee_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    emp = db.query(Employee).filter(
+        Employee.id == employee_id,
+        Employee.user_id == current_user.id
+    ).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    
+    db.delete(emp)
+    db.commit()
+    return {"detail": "Employee deleted successfully"}
+
+
+@router.get("/api/dashboard/operations/expenses", response_model=List[OperationalExpenseOut])
+def get_expenses(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    return db.query(OperationalExpense).filter(OperationalExpense.user_id == current_user.id).order_by(OperationalExpense.date.desc()).all()
+
+
+@router.post("/api/dashboard/operations/expenses", response_model=OperationalExpenseOut)
+def add_expense(
+    expense_data: OperationalExpenseCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    new_exp = OperationalExpense(
+        user_id=current_user.id,
+        category=expense_data.category,
+        amount=expense_data.amount,
+        description=expense_data.description,
+        date=datetime.datetime.utcnow()
+    )
+    db.add(new_exp)
+    db.commit()
+    db.refresh(new_exp)
+    return new_exp
+
+
+@router.put("/api/dashboard/operations/expenses/{expense_id}", response_model=OperationalExpenseOut)
+def update_expense(
+    expense_id: int,
+    expense_data: OperationalExpenseCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    exp = db.query(OperationalExpense).filter(
+        OperationalExpense.id == expense_id,
+        OperationalExpense.user_id == current_user.id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    exp.category = expense_data.category
+    exp.amount = expense_data.amount
+    exp.description = expense_data.description
+    
+    db.commit()
+    db.refresh(exp)
+    return exp
+
+
+@router.delete("/api/dashboard/operations/expenses/{expense_id}")
+def delete_expense(
+    expense_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    exp = db.query(OperationalExpense).filter(
+        OperationalExpense.id == expense_id,
+        OperationalExpense.user_id == current_user.id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
+    db.delete(exp)
+    db.commit()
+    return {"detail": "Expense deleted successfully"}
+
+
+@router.get("/api/dashboard/operations/budget")
+def get_budget_summary(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    sales = db.query(Sale).filter(Sale.user_id == current_user.id).all()
+    employees = db.query(Employee).filter(Employee.user_id == current_user.id).all()
+    expenses = db.query(OperationalExpense).filter(OperationalExpense.user_id == current_user.id).all()
+    
+    total_revenue = sum(s.amount for s in sales)
+    total_payroll = sum(e.salary for e in employees if e.status == "Active")
+    total_expenses = sum(exp.amount for exp in expenses)
+    total_spend = total_payroll + total_expenses
+    net_profit = total_revenue - total_spend
+    
+    # Group expenses by category
+    expense_categories = {}
+    if total_payroll > 0:
+        expense_categories["Payroll"] = total_payroll
+    for exp in expenses:
+        expense_categories[exp.category] = expense_categories.get(exp.category, 0.0) + exp.amount
+        
+    return {
+        "revenue": round(total_revenue, 2),
+        "payroll_costs": round(total_payroll, 2),
+        "operating_expenses": round(total_expenses, 2),
+        "total_spend": round(total_spend, 2),
+        "net_profit": round(net_profit, 2),
+        "categories": {k: round(v, 2) for k, v in expense_categories.items()}
+    }

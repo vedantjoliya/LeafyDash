@@ -4,6 +4,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
 
+# Fallback for Vercel serverless SQLite (which has a read-only filesystem)
+if os.getenv("VERCEL") and DATABASE_URL == "sqlite:///./database.db":
+    DATABASE_URL = "sqlite:////tmp/database.db"
+
 # For PostgreSQL URL from Heroku/Render etc., convert postgres:// to postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
