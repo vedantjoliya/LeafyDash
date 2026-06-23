@@ -305,7 +305,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="salePromoCode" class="form-label">Promo Code (Optional)</label>
-                                <input type="text" id="salePromoCode" class="form-control" placeholder="e.g. SUMMER26">
+                                <input type="text" id="salePromoCode" class="form-control" placeholder="e.g. SUMMER26" oninput="onSalePromoCodeInput()">
+                                <div id="salePromoStatus" style="font-size:0.75rem; margin-top:4px; font-weight:600; display:none;"></div>
                             </div>
 
                             <div id="saleInvoiceTotalWrapper" class="glass-panel" style="padding: 16px; margin-bottom: 24px; text-align:center; background:rgba(123,168,132,0.05); border-color:rgba(123, 168, 132, 0.2); box-shadow:none;">
@@ -597,6 +598,25 @@
                             <div class="form-group">
                                 <label for="mktCouponCode" class="form-label" style="font-weight: 700; font-size: 0.8rem;">Coupon Code (Dynamic)</label>
                                 <input type="text" id="mktCouponCode" class="form-control" value="WELCOME10" placeholder="e.g. VIP20" oninput="updateMessagePreview()">
+                            </div>
+                        </div>
+
+                        <!-- Campaign Discount Selection -->
+                        <div class="grid-crm-3-col" style="width: 100%; margin-top: -10px;">
+                            <div class="form-group">
+                                <label for="mktDiscountType" class="form-label" style="font-weight: 700; font-size: 0.8rem;">Campaign Discount Type</label>
+                                <select id="mktDiscountType" class="form-control" onchange="updateMessagePreview()">
+                                    <option value="">None (No Discount)</option>
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="amount">Fixed Amount</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="mktDiscountValue" class="form-label" style="font-weight: 700; font-size: 0.8rem;">Discount Value</label>
+                                <input type="number" id="mktDiscountValue" class="form-control" value="0" min="0" step="any" placeholder="e.g. 10 or 5.00" oninput="updateMessagePreview()">
+                            </div>
+                            <div style="display:flex; align-items:flex-end;">
+                                <div id="mktDiscountHelp" style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:12px; font-style:italic;">No discount applied.</div>
                             </div>
                         </div>
 
@@ -1694,6 +1714,8 @@
             renderSalesCart();
         }
 
+        let appliedSaleDiscount = null;
+
         function renderSalesCart() {
             const cartItemsList = document.getElementById('cartItemsList');
             const cartItemCount = document.getElementById('cartItemCount');
@@ -1704,7 +1726,7 @@
             if (currentSaleCart.length === 0) {
                 cartItemsList.innerHTML = `<div style="text-align:center; padding:16px; color:var(--text-muted); font-size:0.85rem; border:1px dashed rgba(0,0,0,0.1); border-radius:var(--radius-sm); background:rgba(255,255,255,0.2);">Cart is empty. Choose a product and click Add to Cart.</div>`;
                 if (cartItemCount) cartItemCount.textContent = '0 items';
-                if (totalDisplay) totalDisplay.textContent = '$0.00';
+                if (totalDisplay) totalDisplay.textContent = formatCurrency(0);
                 return;
             }
             
@@ -1733,7 +1755,82 @@
             if (cartItemCount) {
                 cartItemCount.textContent = `${itemsCount} item${itemsCount !== 1 ? 's' : ''}`;
             }
-            if (totalDisplay) totalDisplay.textContent = formatCurrency(total);
+
+            let finalTotal = total;
+            let discountText = '';
+            if (appliedSaleDiscount) {
+                const { discount_type, discount_value } = appliedSaleDiscount;
+                if (discount_type === 'percentage' && discount_value !== null) {
+                    finalTotal = total * (1.0 - (discount_value / 100.0));
+                    discountText = ` (Discounted from ${formatCurrency(total)} - ${discount_value}% Off)`;
+                } else if (discount_type === 'amount' && discount_value !== null) {
+                    finalTotal = Math.max(0.0, total - discount_value);
+                    discountText = ` (Discounted from ${formatCurrency(total)} - ${formatCurrency(discount_value)} Off)`;
+                }
+                finalTotal = Math.round(finalTotal * 100) / 100;
+            }
+
+            if (totalDisplay) {
+                if (discountText) {
+                    totalDisplay.innerHTML = `<span style="text-decoration: line-through; color: var(--text-muted); font-size: 0.9em; font-weight: normal; margin-right: 8px;">${formatCurrency(total)}</span> <span style="color: #43824E;">${formatCurrency(finalTotal)}</span><div style="font-size:0.7rem; color: #43824E; font-weight: normal; margin-top:2px;">${discountText}</div>`;
+                } else {
+                    totalDisplay.textContent = formatCurrency(total);
+                }
+            }
+        }
+
+        let salePromoDebounceTimer = null;
+        function onSalePromoCodeInput() {
+            clearTimeout(salePromoDebounceTimer);
+            const codeInput = document.getElementById('salePromoCode');
+            const statusDiv = document.getElementById('salePromoStatus');
+            if (!codeInput || !statusDiv) return;
+
+            const code = codeInput.value.trim();
+            if (!code) {
+                statusDiv.style.display = 'none';
+                statusDiv.textContent = '';
+                appliedSaleDiscount = null;
+                renderSalesCart();
+                return;
+            }
+
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = 'var(--text-secondary)';
+            statusDiv.textContent = 'Validating code...';
+
+            salePromoDebounceTimer = setTimeout(async () => {
+                const token = localStorage.getItem('user_token');
+                try {
+                    const res = await fetch(`/api/dashboard/sales/validate-promo?code=${encodeURIComponent(code)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        appliedSaleDiscount = data;
+                        statusDiv.style.color = '#43824E';
+                        let desc = '';
+                        if (data.discount_type === 'percentage') {
+                            desc = `${data.discount_value}% off`;
+                        } else if (data.discount_type === 'amount') {
+                            desc = `${formatCurrency(data.discount_value)} off`;
+                        } else {
+                            desc = 'valid (no discount)';
+                        }
+                        statusDiv.textContent = `✓ Promo code active: ${desc}`;
+                    } else {
+                        appliedSaleDiscount = null;
+                        statusDiv.style.color = 'var(--danger)';
+                        statusDiv.textContent = '✗ Invalid promo code';
+                    }
+                } catch(e) {
+                    console.error("Promo validation error", e);
+                    appliedSaleDiscount = null;
+                    statusDiv.style.color = 'var(--danger)';
+                    statusDiv.textContent = 'Connection error';
+                }
+                renderSalesCart();
+            }, 400);
         }
 
         async function changeSalesLocationContext() {
@@ -3052,6 +3149,22 @@
             const textEditor = document.getElementById('mktCampaignText');
             const previewBox = document.getElementById('mktMessagePreviewBox');
             if (!textEditor || !previewBox) return;
+
+            // Update discount status helper text
+            const discTypeEl = document.getElementById('mktDiscountType');
+            const discValEl = document.getElementById('mktDiscountValue');
+            const discHelpEl = document.getElementById('mktDiscountHelp');
+            if (discTypeEl && discValEl && discHelpEl) {
+                const type = discTypeEl.value;
+                const val = parseFloat(discValEl.value) || 0;
+                if (!type) {
+                    discHelpEl.textContent = "No discount applied.";
+                } else if (type === 'percentage') {
+                    discHelpEl.textContent = `Discount configured: ${val}% off product prices.`;
+                } else if (type === 'amount') {
+                    discHelpEl.textContent = `Discount configured: ${formatCurrency(val)} off product prices.`;
+                }
+            }
             
             const rawText = textEditor.value;
             if (!rawText) {
@@ -3287,8 +3400,11 @@
             const segmentSelect = document.getElementById('mktAudienceSegment');
             const segment = segmentSelect.options[segmentSelect.selectedIndex].text;
             const coupon = document.getElementById('mktCouponCode').value || '';
+            const discountType = document.getElementById('mktDiscountType').value || null;
+            const discountValRaw = document.getElementById('mktDiscountValue').value;
+            const discountVal = (discountType && discountValRaw !== '') ? parseFloat(discountValRaw) : null;
             
-            const campaign = await saveCampaignHistory(name, segment, platform, coupon, rawText, targets.length, selectedEmails);
+            const campaign = await saveCampaignHistory(name, segment, platform, coupon, rawText, targets.length, selectedEmails, discountType, discountVal);
             const campaignId = campaign ? campaign.id : 0;
 
             if (platform === 'whatsapp') {
@@ -3466,7 +3582,7 @@
 
         let campaignsCache = [];
 
-        async function saveCampaignHistory(name, segment, channel, coupon, message_body, recipients_count, target_emails) {
+        async function saveCampaignHistory(name, segment, channel, coupon, message_body, recipients_count, target_emails, discount_type = null, discount_value = null) {
             const token = localStorage.getItem('user_token');
             try {
                 const res = await fetch('/api/dashboard/crm/campaigns', {
@@ -3480,6 +3596,8 @@
                         segment,
                         channel,
                         coupon_code: coupon || null,
+                        discount_type,
+                        discount_value,
                         message_body,
                         recipients_count,
                         target_emails: target_emails || []
@@ -3546,7 +3664,7 @@
 
             const token = localStorage.getItem('user_token');
             const tbody = document.getElementById('campaignDetailTrackingBody');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--text-secondary);">Loading logs...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--text-secondary);">Loading logs...</td></tr>';
             
             document.getElementById('campaignDetailModal').style.display = 'flex';
 
@@ -3557,7 +3675,7 @@
                 if (res.ok) {
                     const logs = await res.json();
                     if (logs.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--text-muted);">No tracked clicks recorded.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--text-muted);">No tracked clicks recorded.</td></tr>';
                         return;
                     }
                     tbody.innerHTML = logs.map(l => {
@@ -3571,18 +3689,23 @@
 
                         return `
                             <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
-                                <td style="padding: 6px 10px; font-family: monospace; font-size: 0.75rem;">${escapeHtml(l.customer_email)}</td>
+                                <td style="padding: 6px 10px;">
+                                    <div style="font-weight:600; color:var(--text-primary);">${escapeHtml(l.customer_name || 'N/A')}</div>
+                                    <div style="font-family: monospace; font-size: 0.7rem; color:var(--text-secondary);">${escapeHtml(l.customer_email)}</div>
+                                </td>
                                 <td style="padding: 6px 10px; text-align: center;">${clickBadge}</td>
                                 <td style="padding: 6px 10px; text-align: center;">${convBadge}</td>
+                                <td style="padding: 6px 10px; font-size: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(l.items_purchased || 'N/A')}">${escapeHtml(l.items_purchased || 'N/A')}</td>
+                                <td style="padding: 6px 10px; text-align: right; font-weight: 600; color:#43824E;">${l.converted ? formatCurrency(l.sale_amount) : 'N/A'}</td>
                             </tr>
                         `;
                     }).join('');
                 } else {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--danger);">Failed to load tracking data.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--danger);">Failed to load tracking data.</td></tr>';
                 }
             } catch(e) {
                 console.error("Tracking load error", e);
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--danger);">Failed to connect.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--danger);">Failed to connect.</td></tr>';
             }
         }
 
@@ -3627,54 +3750,86 @@
                 return;
             }
 
-            container.innerHTML = items.map(client => `
-                <div class="glass-panel" style="border-left: 4px solid var(--accent-green); padding: 14px 16px; background: #FFFDF9; border-color: rgba(123, 168, 132, 0.15); box-shadow: var(--shadow-soft); display:flex; flex-direction:column; gap:8px; position:relative;">
-                    <!-- Price Badge -->
-                    <div style="position:absolute; top:10px; right:12px; font-size:0.85rem; font-weight:800; color:#43824E; background:#E2F3E5; padding:3px 8px; border-radius:6px; border: 1px solid rgba(123, 168, 132, 0.15);">
-                        ${formatCurrency(client.total_spend)}
-                    </div>
-
-                    <!-- Name -->
-                    <h4 style="font-family: var(--font-sans); font-size:0.9rem; font-weight:700; color:var(--text-primary); margin:0; padding-right:90px; line-height:1.3; word-break:break-word;">${escapeHtml(client.name)}</h4>
-
-                    <!-- Details -->
-                    <div style="display:flex; flex-direction:column; gap:3px;">
-                        <div style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--text-secondary); overflow:hidden;">
-                            <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity:0.6; flex-shrink:0;">
-                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.758 2.855L15 11.114v-5.73zm-.03 6.862L10.5 9.172 8 10.672 5.5 9.172 1.03 12.245A1 1 0 0 0 2 13h12a1 1 0 0 0 .97-.755zM1 11.114l4.758-2.876L1 5.383v5.73z"/>
-                            </svg>
-                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(client.email)}</span>
+            container.innerHTML = items.map(client => {
+                let campaignsBadgesHtml = '';
+                if (client.promo_campaigns && client.promo_campaigns.length > 0) {
+                    campaignsBadgesHtml = `
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; margin-bottom: 2px;">
+                            ${client.promo_campaigns.map(pc => {
+                                let badgeColor = '#555';
+                                let badgeBg = '#eaeaea';
+                                let statusText = 'Targeted';
+                                if (pc.converted) {
+                                    badgeColor = '#fff';
+                                    badgeBg = '#43824e';
+                                    statusText = 'Purchased';
+                                } else if (pc.clicked) {
+                                    badgeColor = '#3b5998';
+                                    badgeBg = '#dbe9f6';
+                                    statusText = 'Clicked';
+                                }
+                                return `
+                                    <span class="badge" style="font-size: 0.6rem; padding: 2px 6px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid rgba(0,0,0,0.05); border-radius: 4px;" title="Campaign: ${escapeHtml(pc.campaign_name)} (Coupon: ${escapeHtml(pc.coupon_code || 'N/A')})">
+                                        ${escapeHtml(pc.campaign_name)}: ${statusText}
+                                    </span>
+                                `;
+                            }).join('')}
                         </div>
-                        <div style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--text-secondary);">
-                            <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity:0.6; flex-shrink:0;">
-                                <path d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
-                            </svg>
-                            <span>${escapeHtml(client.phone || 'N/A')}</span>
-                        </div>
-                    </div>
+                    `;
+                }
 
-                    <!-- Stats & Actions Row -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto; padding-top:4px; border-top:1px solid rgba(0,0,0,0.04);">
-                        <div style="display:flex; flex-direction:column; gap:1px;">
-                            <span style="font-size:0.7rem; color:var(--text-secondary);">Purchased: <strong>${client.purchases_count} times</strong></span>
-                            <span style="font-size:0.65rem; color:var(--text-muted);">Last visit: <strong style="color:var(--text-primary);">${escapeHtml(client.last_purchased)}</strong></span>
+                return `
+                    <div class="glass-panel" style="border-left: 4px solid var(--accent-green); padding: 14px 16px; background: #FFFDF9; border-color: rgba(123, 168, 132, 0.15); box-shadow: var(--shadow-soft); display:flex; flex-direction:column; gap:8px; position:relative;">
+                        <!-- Price Badge -->
+                        <div style="position:absolute; top:10px; right:12px; font-size:0.85rem; font-weight:800; color:#43824E; background:#E2F3E5; padding:3px 8px; border-radius:6px; border: 1px solid rgba(123, 168, 132, 0.15);">
+                            ${formatCurrency(client.total_spend)}
                         </div>
-                        <div style="display:flex; gap:4px;">
-                            <button type="button" onclick="editCustomer('${escapeHtml(client.email)}')" class="icon-btn icon-btn-edit" title="Edit Profile" style="width:26px; height:26px;">
-                                <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+
+                        <!-- Name -->
+                        <h4 style="font-family: var(--font-sans); font-size:0.9rem; font-weight:700; color:var(--text-primary); margin:0; padding-right:90px; line-height:1.3; word-break:break-word;">${escapeHtml(client.name)}</h4>
+
+                        <!-- Details -->
+                        <div style="display:flex; flex-direction:column; gap:3px;">
+                            <div style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--text-secondary); overflow:hidden;">
+                                <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity:0.6; flex-shrink:0;">
+                                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.758 2.855L15 11.114v-5.73zm-.03 6.862L10.5 9.172 8 10.672 5.5 9.172 1.03 12.245A1 1 0 0 0 2 13h12a1 1 0 0 0 .97-.755zM1 11.114l4.758-2.876L1 5.383v5.73z"/>
                                 </svg>
-                            </button>
-                            <button type="button" onclick="deleteCustomer('${escapeHtml(client.email)}')" class="icon-btn icon-btn-delete" title="Delete Profile" style="width:26px; height:26px;">
-                                <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(client.email)}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--text-secondary);">
+                                <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity:0.6; flex-shrink:0;">
+                                    <path d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
                                 </svg>
-                            </button>
+                                <span>${escapeHtml(client.phone || 'N/A')}</span>
+                            </div>
+                        </div>
+
+                        <!-- Campaign Badges -->
+                        ${campaignsBadgesHtml}
+
+                        <!-- Stats & Actions Row -->
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:auto; padding-top:4px; border-top:1px solid rgba(0,0,0,0.04);">
+                            <div style="display:flex; flex-direction:column; gap:1px;">
+                                <span style="font-size:0.7rem; color:var(--text-secondary);">Purchased: <strong>${client.purchases_count} times</strong></span>
+                                <span style="font-size:0.65rem; color:var(--text-muted);">Last visit: <strong style="color:var(--text-primary);">${escapeHtml(client.last_purchased)}</strong></span>
+                            </div>
+                            <div style="display:flex; gap:4px;">
+                                <button type="button" onclick="editCustomer('${escapeHtml(client.email)}')" class="icon-btn icon-btn-edit" title="Edit Profile" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                    </svg>
+                                </button>
+                                <button type="button" onclick="deleteCustomer('${escapeHtml(client.email)}')" class="icon-btn icon-btn-delete" title="Delete Profile" style="width:26px; height:26px;">
+                                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function filterCustomersCatalog() {
@@ -4042,6 +4197,12 @@
                         if (res.ok) {
                             document.getElementById('addSaleForm').reset();
                             currentSaleCart = [];
+                            appliedSaleDiscount = null;
+                            const statusDiv = document.getElementById('salePromoStatus');
+                            if (statusDiv) {
+                                statusDiv.style.display = 'none';
+                                statusDiv.textContent = '';
+                            }
                             renderSalesCart();
                             await refreshSalesProducts();
                             loadSalesData();
@@ -4661,9 +4822,11 @@
                         <table class="premium-table" style="font-size: 0.8rem; margin: 0; width: 100%; text-align: left; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: rgba(123, 168, 132, 0.05); border-bottom: 1px solid rgba(123, 168, 132, 0.1);">
-                                    <th style="padding: 6px 10px; font-weight: 700;">Customer Email</th>
-                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Clicked Link?</th>
-                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Converted?</th>
+                                    <th style="padding: 6px 10px; font-weight: 700;">Customer</th>
+                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Clicked</th>
+                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Converted</th>
+                                    <th style="padding: 6px 10px; font-weight: 700;">Purchased Items</th>
+                                    <th style="padding: 6px 10px; font-weight: 700; text-align: right;">Bill Total</th>
                                 </tr>
                             </thead>
                             <tbody id="campaignDetailTrackingBody">

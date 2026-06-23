@@ -165,6 +165,8 @@ class MarketingCampaign(Base):
     segment = Column(String, nullable=False)
     channel = Column(String, nullable=False)  # whatsapp, email, print
     coupon_code = Column(String, nullable=True)
+    discount_type = Column(String, nullable=True)  # percentage or amount
+    discount_value = Column(Float, nullable=True)
     message_body = Column(Text, nullable=False)
     recipients_count = Column(Integer, default=0)
     sent_at = Column(DateTime, default=datetime.datetime.utcnow)

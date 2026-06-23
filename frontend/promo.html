@@ -663,6 +663,19 @@
         let promoInfo = null;
         let selectedProduct = null;
 
+        function getDiscountedPrice(price) {
+            if (!promoInfo || !promoInfo.discount_type || promoInfo.discount_value === null) {
+                return price;
+            }
+            let discounted = price;
+            if (promoInfo.discount_type === 'percentage') {
+                discounted = price * (1.0 - (promoInfo.discount_value / 100.0));
+            } else if (promoInfo.discount_type === 'amount') {
+                discounted = Math.max(0.0, price - promoInfo.discount_value);
+            }
+            return Math.round(discounted * 100) / 100;
+        }
+
         // Utility: Extract Query parameters
         function getQueryParam(name) {
             const urlParams = new URLSearchParams(window.location.search);
@@ -741,24 +754,31 @@
                 return;
             }
 
-            grid.innerHTML = filteredProducts.map(p => `
-                <div class="product-card">
-                    <div class="product-image">
-                        <img src="${p.image_path || ''}" onerror="this.src='https://placehold.co/300x200/faf6ee/7ba884?text=${encodeURIComponent(p.name)}'">
-                    </div>
-                    <div class="product-info">
-                        <div class="product-meta">
-                            <span class="product-sku">SKU: ${p.sku || 'N/A'}</span>
-                            <span class="product-stock">${p.stock} remaining</span>
+            grid.innerHTML = filteredProducts.map(p => {
+                const discPrice = getDiscountedPrice(p.price);
+                const priceHtml = discPrice < p.price
+                    ? `<span style="text-decoration: line-through; color: var(--color-text-secondary); font-size: 0.95rem; font-weight: normal; margin-right: 6px;">${formatCurrency(p.price)}</span> <span class="product-price" style="color: #43824E;">${formatCurrency(discPrice)}</span>`
+                    : `<span class="product-price">${formatCurrency(p.price)}</span>`;
+
+                return `
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="${p.image_path || ''}" onerror="this.src='https://placehold.co/300x200/faf6ee/7ba884?text=${encodeURIComponent(p.name)}'">
                         </div>
-                        <h4 class="product-name">${escapeHtml(p.name)}</h4>
-                        <div class="product-footer">
-                            <span class="product-price">${formatCurrency(p.price)}</span>
-                            <button type="button" class="btn-select" onclick="openCheckout(${p.id})">Order Now</button>
+                        <div class="product-info">
+                            <div class="product-meta">
+                                <span class="product-sku">SKU: ${p.sku || 'N/A'}</span>
+                                <span class="product-stock">${p.stock} remaining</span>
+                            </div>
+                            <h4 class="product-name">${escapeHtml(p.name)}</h4>
+                            <div class="product-footer">
+                                ${priceHtml}
+                                <button type="button" class="btn-select" onclick="openCheckout(${p.id})">Order Now</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function openCheckout(productId) {
@@ -768,7 +788,13 @@
             document.getElementById('checkout-prod-id').value = selectedProduct.id;
             document.getElementById('checkout-prod-name').textContent = `Order ${selectedProduct.name}`;
             document.getElementById('summary-name').textContent = selectedProduct.name;
-            document.getElementById('summary-unit-price').textContent = formatCurrency(selectedProduct.price);
+            
+            const discPrice = getDiscountedPrice(selectedProduct.price);
+            if (discPrice < selectedProduct.price) {
+                document.getElementById('summary-unit-price').innerHTML = `<span style="text-decoration: line-through; color: var(--color-text-secondary); font-size: 0.9em; font-weight: normal; margin-right: 6px;">${formatCurrency(selectedProduct.price)}</span> <span style="color: #43824E;">${formatCurrency(discPrice)}</span>`;
+            } else {
+                document.getElementById('summary-unit-price').textContent = formatCurrency(selectedProduct.price);
+            }
             document.getElementById('summary-coupon').textContent = promoInfo.coupon_code || 'None';
             
             const qtyInput = document.getElementById('checkoutQty');
@@ -804,7 +830,15 @@
             }
 
             const total = selectedProduct.price * qty;
-            document.getElementById('summary-total-price').textContent = formatCurrency(total);
+            const discPrice = getDiscountedPrice(selectedProduct.price);
+            const discTotal = discPrice * qty;
+            
+            const totalDisplay = document.getElementById('summary-total-price');
+            if (discTotal < total) {
+                totalDisplay.innerHTML = `<span style="text-decoration: line-through; color: var(--color-text-secondary); font-size: 0.9em; font-weight: normal; margin-right: 6px;">${formatCurrency(total)}</span> <span style="color: #43824E;">${formatCurrency(discTotal)}</span>`;
+            } else {
+                totalDisplay.textContent = formatCurrency(total);
+            }
         }
 
         async function submitCheckout(event) {

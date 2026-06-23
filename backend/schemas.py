@@ -343,6 +343,8 @@ class MarketingCampaignCreate(BaseModel):
     segment: str
     channel: str
     coupon_code: Optional[str] = None
+    discount_type: Optional[str] = None  # "percentage" or "amount"
+    discount_value: Optional[float] = None
     message_body: str
     recipients_count: int
     target_emails: Optional[List[str]] = []
@@ -371,6 +373,8 @@ class MarketingCampaignOut(BaseModel):
     segment: str
     channel: str
     coupon_code: Optional[str] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
     message_body: str
     recipients_count: int
     sent_at: datetime
@@ -387,6 +391,9 @@ class CampaignCustomerTrackingOut(BaseModel):
     clicked_at: Optional[datetime] = None
     converted: bool
     sale_id: Optional[int] = None
+    customer_name: Optional[str] = None
+    sale_amount: Optional[float] = None
+    items_purchased: Optional[str] = None
 
     class Config:
         from_attributes = True

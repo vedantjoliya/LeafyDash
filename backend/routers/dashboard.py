@@ -295,6 +295,24 @@ def get_sales(
 ):
     return db.query(Sale).filter(Sale.user_id == current_user.id).order_by(Sale.timestamp.desc()).all()
 
+@router.get("/api/dashboard/sales/validate-promo")
+def validate_promo(
+    code: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    campaign = db.query(MarketingCampaign).filter(
+        MarketingCampaign.user_id == current_user.id,
+        MarketingCampaign.coupon_code == code.strip()
+    ).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Promo code not found")
+    return {
+        "coupon_code": campaign.coupon_code,
+        "discount_type": campaign.discount_type,
+        "discount_value": campaign.discount_value
+    }
+
 @router.post("/api/dashboard/sales", response_model=SaleOut)
 def add_sale(
     sale_data: SaleCreate,
@@ -356,6 +374,14 @@ def add_sale(
         )
         sale_items.append(db_item)
         
+    # Apply discount if campaign has discount settings
+    if campaign_found:
+        if campaign_found.discount_type == "percentage" and campaign_found.discount_value is not None:
+            total_invoice_amount = total_invoice_amount * (1.0 - (campaign_found.discount_value / 100.0))
+        elif campaign_found.discount_type == "amount" and campaign_found.discount_value is not None:
+            total_invoice_amount = max(0.0, total_invoice_amount - campaign_found.discount_value)
+        total_invoice_amount = round(total_invoice_amount, 2)
+
     new_sale = Sale(
         user_id=current_user.id,
         location_id=sale_data.location_id,
@@ -980,6 +1006,8 @@ def create_marketing_campaign(
         segment=campaign_data.segment,
         channel=campaign_data.channel,
         coupon_code=campaign_data.coupon_code,
+        discount_type=campaign_data.discount_type,
+        discount_value=campaign_data.discount_value,
         message_body=campaign_data.message_body,
         recipients_count=campaign_data.recipients_count
     )
@@ -1027,9 +1055,23 @@ def get_campaign_tracking(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
         
-    return db.query(CampaignCustomerTracking).filter(
+    trackings = db.query(CampaignCustomerTracking).filter(
         CampaignCustomerTracking.campaign_id == campaign_id
     ).all()
+
+    for t in trackings:
+        t.customer_name = "N/A"
+        t.sale_amount = 0.0
+        t.items_purchased = "N/A"
+        if t.sale_id:
+            sale = db.query(Sale).filter(Sale.id == t.sale_id).first()
+            if sale:
+                t.customer_name = sale.customer_name or "Valued Customer"
+                t.sale_amount = sale.amount
+                if sale.items:
+                    t.items_purchased = ", ".join(f"{item.item_name} (x{item.quantity})" for item in sale.items)
+
+    return trackings
 
 
 @router.get("/api/public/promo/info")
@@ -1065,6 +1107,8 @@ def get_public_promo_info(
         "business_name": owner.business_name,
         "campaign_name": campaign.name,
         "coupon_code": campaign.coupon_code,
+        "discount_type": campaign.discount_type,
+        "discount_value": campaign.discount_value,
         "customer_email": email_clean,
         "locations": [
             {"id": loc.id, "name": loc.name, "address": loc.address} for loc in locations
@@ -1126,6 +1170,13 @@ def public_promo_buy(
         
     product.stock -= quantity
     total_amount = product.price * quantity
+    
+    if campaign.discount_type == "percentage" and campaign.discount_value is not None:
+        total_amount = total_amount * (1.0 - (campaign.discount_value / 100.0))
+    elif campaign.discount_type == "amount" and campaign.discount_value is not None:
+        total_amount = max(0.0, total_amount - campaign.discount_value)
+    total_amount = round(total_amount, 2)
+    
     loc = db.query(Location).filter(Location.id == location_id).first()
     loc_name = loc.name if loc else "Storefront"
     
@@ -1193,12 +1244,34 @@ def get_customers(
                 "phone": phone,
                 "purchases_count": purchases_count,
                 "total_spend": s.amount,
-                "last_purchased": last_item
+                "last_purchased": last_item,
+                "promo_campaigns": []
             }
         else:
             customers_map[key]["purchases_count"] += purchases_count
             customers_map[key]["total_spend"] += s.amount
             customers_map[key]["last_purchased"] = last_item
+
+    # Add promo tracking info for each customer email
+    for key, c_info in customers_map.items():
+        trackings = db.query(CampaignCustomerTracking).filter(
+            CampaignCustomerTracking.customer_email == key
+        ).all()
+        
+        promo_campaigns = []
+        for t in trackings:
+            campaign = db.query(MarketingCampaign).filter(
+                MarketingCampaign.id == t.campaign_id,
+                MarketingCampaign.user_id == current_user.id
+            ).first()
+            if campaign:
+                promo_campaigns.append({
+                    "campaign_name": campaign.name,
+                    "coupon_code": campaign.coupon_code,
+                    "clicked": t.clicked,
+                    "converted": t.converted
+                })
+        c_info["promo_campaigns"] = promo_campaigns
         
     return list(customers_map.values())
 
