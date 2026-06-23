@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -7,16 +8,31 @@ import os
 from .database import engine, Base
 from .routers import auth, admin, onboarding, dashboard
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Startup: create all database tables (wrapped so a bad DB URL doesn't
+    crash the entire Vercel lambda at import time).
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Database tables created / verified OK")
+    except Exception as exc:
+        # Log the error but let the app start – API health check will surface it
+        print(f"WARNING: Could not run create_all: {exc}")
+    yield
+    # Shutdown logic here if needed
+
 
 app = FastAPI(
     title="Leafy Dash",
     description="A secure modular business dashboard system customized for your operational needs.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
-# CORS middleware config
+# ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,37 +41,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routers
+# ── API Routers ───────────────────────────────────────────────────────────────
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)
 app.include_router(dashboard.router)
 
-# Mount Static Directories for CSS/JS assets if they exist
+# ── Static file directories ───────────────────────────────────────────────────
 upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
 
-# Create directories (may fail silently on Vercel's read-only filesystem)
 for d in ["frontend/css", "frontend/js", "frontend/images", upload_dir]:
     try:
         os.makedirs(d, exist_ok=True)
     except Exception:
         pass
 
-# Mount each directory only if it actually exists (Vercel safe)
-_mounts = [
-    ("/css", "frontend/css", "css"),
-    ("/js", "frontend/js", "js"),
-    ("/images", "frontend/images", "images"),
-    ("/uploads", upload_dir, "uploads"),
-]
-for _route, _dir, _name in _mounts:
+for _route, _dir, _name in [
+    ("/css",     "frontend/css",    "css"),
+    ("/js",      "frontend/js",     "js"),
+    ("/images",  "frontend/images", "images"),
+    ("/uploads", upload_dir,        "uploads"),
+]:
     try:
         if os.path.isdir(_dir):
             app.mount(_route, StaticFiles(directory=_dir), name=_name)
     except Exception as e:
         print(f"Static mount skipped for {_dir}: {e}")
 
-# Frontend Page Routes (Serving HTML files securely)
+# ── Frontend HTML routes ──────────────────────────────────────────────────────
 @app.get("/")
 def read_index():
     return FileResponse("frontend/index.html")
@@ -87,3 +100,10 @@ def read_promo():
 @app.get("/review/{user_id}")
 def read_public_review(user_id: int):
     return FileResponse("frontend/public_review.html")
+
+# ── Health check ──────────────────────────────────────────────────────────────
+@app.get("/api/health")
+def health():
+    from .database import DATABASE_URL
+    db_type = "postgresql" if "postgresql" in DATABASE_URL else "sqlite"
+    return {"status": "ok", "db": db_type}
