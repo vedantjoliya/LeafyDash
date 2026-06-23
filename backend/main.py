@@ -33,18 +33,27 @@ app.include_router(dashboard.router)
 
 # Mount Static Directories for CSS/JS assets if they exist
 upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
-try:
-    os.makedirs("frontend/css", exist_ok=True)
-    os.makedirs("frontend/js", exist_ok=True)
-    os.makedirs("frontend/images", exist_ok=True)
-    os.makedirs(upload_dir, exist_ok=True)
-except Exception as e:
-    print(f"Directory creation skipped (read-only file system): {e}")
 
-app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
-app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
-app.mount("/images", StaticFiles(directory="frontend/images"), name="images")
-app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+# Create directories (may fail silently on Vercel's read-only filesystem)
+for d in ["frontend/css", "frontend/js", "frontend/images", upload_dir]:
+    try:
+        os.makedirs(d, exist_ok=True)
+    except Exception:
+        pass
+
+# Mount each directory only if it actually exists (Vercel safe)
+_mounts = [
+    ("/css", "frontend/css", "css"),
+    ("/js", "frontend/js", "js"),
+    ("/images", "frontend/images", "images"),
+    ("/uploads", upload_dir, "uploads"),
+]
+for _route, _dir, _name in _mounts:
+    try:
+        if os.path.isdir(_dir):
+            app.mount(_route, StaticFiles(directory=_dir), name=_name)
+    except Exception as e:
+        print(f"Static mount skipped for {_dir}: {e}")
 
 # Frontend Page Routes (Serving HTML files securely)
 @app.get("/")
