@@ -117,3 +117,17 @@ def health():
     from .database import DATABASE_URL
     db_type = "postgresql" if "postgresql" in DATABASE_URL else "sqlite"
     return {"status": "ok", "db": db_type}
+
+# ── Debug endpoint (safe — no secrets exposed) ────────────────────────────────
+@app.get("/api/debug")
+def debug():
+    import os
+    from .auth import ADMIN_USERNAME, SECRET_KEY
+    return {
+        "DATABASE_URL_set": "postgresql" in os.getenv("DATABASE_URL", ""),
+        "JWT_SECRET_KEY_set": os.getenv("JWT_SECRET_KEY") is not None,
+        "JWT_SECRET_KEY_is_default": os.getenv("JWT_SECRET_KEY") == "antigravity_super_secret_session_key_987654321",
+        "ADMIN_USERNAME": ADMIN_USERNAME,
+        "ADMIN_PASSWORD_set": os.getenv("ADMIN_PASSWORD") is not None,
+        "running_on_vercel": os.getenv("VERCEL") is not None,
+    }
