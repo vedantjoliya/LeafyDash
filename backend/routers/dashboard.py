@@ -7,8 +7,8 @@ import os
 import shutil
 import uuid
 from ..database import get_db
-from ..models import User, ActiveModule, Product, Review, Sale, SaleItem, UserAnswers, Location, ContactMessage, AdminMessage, MarketingCampaign
-from ..schemas import ProductCreate, ProductOut, ReviewCreate, ReviewOut, SaleCreate, SaleOut, ModuleStatus, LocationCreate, LocationOut, LocationUpdate, ProfileUpdate, ContactMessageCreate, AdminMessageOut, MarketingCampaignCreate, MarketingCampaignOut
+from ..models import User, ActiveModule, Product, Review, Sale, SaleItem, UserAnswers, Location, ContactMessage, AdminMessage, MarketingCampaign, CampaignCustomerTracking
+from ..schemas import ProductCreate, ProductOut, ReviewCreate, ReviewOut, SaleCreate, SaleOut, ModuleStatus, LocationCreate, LocationOut, LocationUpdate, ProfileUpdate, ContactMessageCreate, AdminMessageOut, MarketingCampaignCreate, MarketingCampaignOut, CampaignCustomerTrackingOut
 from ..auth import get_current_active_user, get_password_hash
 
 router = APIRouter(tags=["Dashboard Operations"])
@@ -224,33 +224,66 @@ def get_analytics_data(
     db: Session = Depends(get_db)
 ):
     sales = db.query(Sale).filter(Sale.user_id == current_user.id).all()
-    reviews = db.query(Review).filter(Review.user_id == current_user.id).all()
+    products = db.query(Product).filter(Product.user_id == current_user.id).all()
     
     # Location breakdown
     loc_sales = {}
     for s in sales:
-        loc_sales[s.location] = loc_sales.get(s.location, 0.0) + s.amount
+        loc_label = s.location or "Online"
+        loc_sales[loc_label] = loc_sales.get(loc_label, 0.0) + s.amount
         
     location_labels = list(loc_sales.keys())
     location_data = [round(v, 2) for v in loc_sales.values()]
     
-    # Rating breakdown
-    rating_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-    for r in reviews:
-        if r.rating in rating_counts:
-            rating_counts[r.rating] += 1
-            
+    # Product sales calculations
+    product_performance = {
+        p.id: {
+            "name": p.name,
+            "sku": p.sku or "N/A",
+            "units_sold": 0,
+            "revenue": 0.0,
+            "stock": p.stock
+        } for p in products
+    }
+    
+    for s in sales:
+        for item in s.items:
+            if item.product_id in product_performance:
+                product_performance[item.product_id]["units_sold"] += item.quantity
+                product_performance[item.product_id]["revenue"] += item.amount
+            else:
+                product_performance[item.product_id] = {
+                    "name": item.item_name,
+                    "sku": "N/A",
+                    "units_sold": item.quantity,
+                    "revenue": item.amount,
+                    "stock": 0
+                }
+                
+    product_list = list(product_performance.values())
+    product_list_sorted = sorted(product_list, key=lambda x: x["units_sold"], reverse=True)
+    
+    # Top 5 products for chart
+    top_5 = product_list_sorted[:5]
+    product_labels = [p["name"] for p in top_5]
+    product_units = [p["units_sold"] for p in top_5]
+    product_revenues = [round(p["revenue"], 2) for p in top_5]
+    
+    total_units_sold = sum(p["units_sold"] for p in product_list)
+    
     return {
         "locations": {
             "labels": location_labels if location_labels else ["Online"],
             "data": location_data if location_data else [0.0]
         },
-        "ratings": {
-            "labels": ["1 Star", "2 Star", "3 Star", "4 Star", "5 Star"],
-            "data": [rating_counts[1], rating_counts[2], rating_counts[3], rating_counts[4], rating_counts[5]]
+        "products": {
+            "labels": product_labels,
+            "units": product_units,
+            "revenues": product_revenues,
+            "all_data": product_list_sorted
         },
-        "conversion_rate": 3.4,  # static mockup
-        "retention_rate": 84.2,  # static mockup
+        "conversion_rate": 3.4,
+        "total_products_sold": total_units_sold
     }
 
 # --- 3. Sales Endpoints ---
@@ -271,6 +304,16 @@ def add_sale(
     if not sale_data.items:
         raise HTTPException(status_code=400, detail="A sale must contain at least one item.")
         
+    # Verify promo code if provided
+    campaign_found = None
+    if sale_data.promo_code:
+        campaign_found = db.query(MarketingCampaign).filter(
+            MarketingCampaign.user_id == current_user.id,
+            MarketingCampaign.coupon_code == sale_data.promo_code
+        ).first()
+        if not campaign_found:
+            raise HTTPException(status_code=400, detail="Invalid promo code.")
+
     # Verify location exists
     loc = db.query(Location).filter(
         Location.id == sale_data.location_id,
@@ -321,12 +364,29 @@ def add_sale(
         customer_name=sale_data.customer_name or "Walk-in Customer",
         customer_email=sale_data.customer_email or "walkin@example.com",
         customer_phone=sale_data.customer_phone or "N/A",
+        promo_code=sale_data.promo_code,
         items=sale_items
     )
     
     db.add(new_sale)
     db.commit()
     db.refresh(new_sale)
+
+    # Link tracking conversion if applicable
+    if campaign_found and sale_data.customer_email:
+        email_clean = sale_data.customer_email.strip().lower()
+        tracking = db.query(CampaignCustomerTracking).filter(
+            CampaignCustomerTracking.campaign_id == campaign_found.id,
+            CampaignCustomerTracking.customer_email == email_clean
+        ).first()
+        if tracking:
+            tracking.clicked = True
+            if not tracking.clicked_at:
+                tracking.clicked_at = datetime.datetime.utcnow()
+            tracking.converted = True
+            tracking.sale_id = new_sale.id
+            db.commit()
+
     return new_sale
 
 @router.put("/api/dashboard/sales/{sale_id}", response_model=SaleOut)
@@ -926,6 +986,20 @@ def create_marketing_campaign(
     db.add(campaign)
     db.commit()
     db.refresh(campaign)
+
+    if campaign_data.target_emails:
+        for email in campaign_data.target_emails:
+            email_clean = email.strip().lower()
+            if email_clean and email_clean != "n/a" and email_clean != "walkin@example.com":
+                tracking = CampaignCustomerTracking(
+                    campaign_id=campaign.id,
+                    customer_email=email_clean,
+                    clicked=False,
+                    converted=False
+                )
+                db.add(tracking)
+        db.commit()
+
     return campaign
 
 
@@ -938,6 +1012,150 @@ def get_marketing_campaigns(
         MarketingCampaign.user_id == current_user.id
     ).order_by(MarketingCampaign.sent_at.desc()).all()
     return campaigns
+
+
+@router.get("/api/dashboard/crm/campaigns/{campaign_id}/tracking", response_model=List[CampaignCustomerTrackingOut])
+def get_campaign_tracking(
+    campaign_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    campaign = db.query(MarketingCampaign).filter(
+        MarketingCampaign.id == campaign_id,
+        MarketingCampaign.user_id == current_user.id
+    ).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+        
+    return db.query(CampaignCustomerTracking).filter(
+        CampaignCustomerTracking.campaign_id == campaign_id
+    ).all()
+
+
+@router.get("/api/public/promo/info")
+def get_public_promo_info(
+    c: int,
+    e: str,
+    db: Session = Depends(get_db)
+):
+    email_clean = e.strip().lower()
+    campaign = db.query(MarketingCampaign).filter(MarketingCampaign.id == c).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+        
+    tracking = db.query(CampaignCustomerTracking).filter(
+        CampaignCustomerTracking.campaign_id == c,
+        CampaignCustomerTracking.customer_email == email_clean
+    ).first()
+    
+    if not tracking:
+        raise HTTPException(status_code=403, detail="Access denied. This promotion page is private and only available to invited customers.")
+        
+    tracking.clicked = True
+    if not tracking.clicked_at:
+        tracking.clicked_at = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(tracking)
+    
+    owner = db.query(User).filter(User.id == campaign.user_id).first()
+    products = db.query(Product).filter(Product.user_id == campaign.user_id).all()
+    locations = db.query(Location).filter(Location.user_id == campaign.user_id).all()
+    
+    return {
+        "business_name": owner.business_name,
+        "campaign_name": campaign.name,
+        "coupon_code": campaign.coupon_code,
+        "customer_email": email_clean,
+        "locations": [
+            {"id": loc.id, "name": loc.name, "address": loc.address} for loc in locations
+        ],
+        "products": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "sku": p.sku,
+                "stock": p.stock,
+                "price": p.price,
+                "location_id": p.location_id,
+                "image_path": p.image_path
+            } for p in products if p.stock > 0
+        ]
+    }
+
+
+@router.post("/api/public/promo/buy")
+def public_promo_buy(
+    payload: Dict[str, Any],
+    db: Session = Depends(get_db)
+):
+    campaign_id = payload.get("campaign_id")
+    email = payload.get("email")
+    product_id = payload.get("product_id")
+    quantity = payload.get("quantity", 1)
+    location_id = payload.get("location_id")
+    customer_name = payload.get("customer_name", "Valued Customer")
+    customer_phone = payload.get("customer_phone", "N/A")
+    
+    if not campaign_id or not email or not product_id or not location_id:
+        raise HTTPException(status_code=400, detail="Missing required checkout details")
+        
+    email_clean = email.strip().lower()
+    campaign = db.query(MarketingCampaign).filter(MarketingCampaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+        
+    tracking = db.query(CampaignCustomerTracking).filter(
+        CampaignCustomerTracking.campaign_id == campaign_id,
+        CampaignCustomerTracking.customer_email == email_clean
+    ).first()
+    if not tracking:
+        raise HTTPException(status_code=403, detail="Verification failed. Invalid promotion access.")
+        
+    product = db.query(Product).filter(
+        Product.id == product_id,
+        Product.user_id == campaign.user_id
+    ).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+        
+    if product.location_id != location_id:
+         raise HTTPException(status_code=400, detail="Product does not belong to the selected storefront location")
+         
+    if product.stock < quantity:
+        raise HTTPException(status_code=400, detail=f"Insufficient stock. Only {product.stock} units available.")
+        
+    product.stock -= quantity
+    total_amount = product.price * quantity
+    loc = db.query(Location).filter(Location.id == location_id).first()
+    loc_name = loc.name if loc else "Storefront"
+    
+    sale_item = SaleItem(
+        product_id=product.id,
+        quantity=quantity,
+        amount=total_amount,
+        item_name=product.name
+    )
+    
+    new_sale = Sale(
+        user_id=campaign.user_id,
+        location_id=location_id,
+        amount=total_amount,
+        location=loc_name,
+        customer_name=customer_name,
+        customer_email=email_clean,
+        customer_phone=customer_phone,
+        promo_code=campaign.coupon_code,
+        items=[sale_item]
+    )
+    db.add(new_sale)
+    db.commit()
+    db.refresh(new_sale)
+    
+    tracking.converted = True
+    tracking.sale_id = new_sale.id
+    db.commit()
+    
+    return {"message": "Purchase successful! Thank you for your order.", "sale_id": new_sale.id}
 
 
 # --- 7. Customers Endpoints ---

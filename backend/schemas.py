@@ -225,6 +225,7 @@ class SaleCreate(BaseModel):
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_phone: Optional[str] = None
+    promo_code: Optional[str] = None
     items: List[SaleItemCreate]
 
 class SaleOut(BaseModel):
@@ -235,6 +236,7 @@ class SaleOut(BaseModel):
     customer_name: Optional[str] = None
     customer_email: Optional[str] = None
     customer_phone: Optional[str] = None
+    promo_code: Optional[str] = None
     timestamp: datetime
     items: List[SaleItemOut]
 
@@ -343,6 +345,7 @@ class MarketingCampaignCreate(BaseModel):
     coupon_code: Optional[str] = None
     message_body: str
     recipients_count: int
+    target_emails: Optional[List[str]] = []
 
     @field_validator("name")
     @classmethod
@@ -371,6 +374,19 @@ class MarketingCampaignOut(BaseModel):
     message_body: str
     recipients_count: int
     sent_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CampaignCustomerTrackingOut(BaseModel):
+    id: int
+    campaign_id: int
+    customer_email: str
+    clicked: bool
+    clicked_at: Optional[datetime] = None
+    converted: bool
+    sale_id: Optional[int] = None
 
     class Config:
         from_attributes = True

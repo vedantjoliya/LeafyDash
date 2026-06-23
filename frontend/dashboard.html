@@ -179,10 +179,10 @@
                     </div>
                     <div class="metric-card glass-panel">
                         <div class="metric-header">
-                            <span>CUSTOMER RETENTION</span>
+                            <span>TOTAL PRODUCTS SOLD</span>
                         </div>
-                        <div class="metric-value" id="val-retention">0.0%</div>
-                        <div class="metric-footer">Loyalty & repeat purchase rate</div>
+                        <div class="metric-value" id="val-products-sold">0 units</div>
+                        <div class="metric-footer">Total units sold across all channels</div>
                     </div>
                 </div>
 
@@ -194,10 +194,33 @@
                         </div>
                     </div>
                     <div class="chart-card glass-panel">
-                        <h3 class="chart-title">Customer Feedback Distribution</h3>
+                        <h3 class="chart-title">Top Products Sales Volume</h3>
                         <div class="chart-container" style="max-height: 250px;">
-                            <canvas id="feedbackStarsChart"></canvas>
+                            <canvas id="productPerformanceChart"></canvas>
                         </div>
+                    </div>
+                </div>
+
+                <!-- All Products Performance Table -->
+                <div class="glass-panel" style="padding: 28px; margin-top: 24px;">
+                    <h3 style="font-family: var(--font-title); margin-bottom: 20px;">All Products Analytics Catalog</h3>
+                    <div style="max-height: 350px; overflow-y: auto;">
+                        <table class="premium-table" style="width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: rgba(123, 168, 132, 0.05); border-bottom: 1px solid rgba(123, 168, 132, 0.1);">
+                                    <th style="padding: 10px 14px; font-weight: 700;">Product Name</th>
+                                    <th style="padding: 10px 14px; font-weight: 700;">SKU</th>
+                                    <th style="padding: 10px 14px; font-weight: 700; text-align: center;">Units Sold</th>
+                                    <th style="padding: 10px 14px; font-weight: 700; text-align: right;">Total Revenue</th>
+                                    <th style="padding: 10px 14px; font-weight: 700; text-align: center;">Current Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsProductsTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No product data available yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -279,6 +302,10 @@
                             <div class="form-group">
                                 <label for="saleCustomerPhone" class="form-label">Customer Phone</label>
                                 <input type="text" id="saleCustomerPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="salePromoCode" class="form-label">Promo Code (Optional)</label>
+                                <input type="text" id="salePromoCode" class="form-control" placeholder="e.g. SUMMER26">
                             </div>
 
                             <div id="saleInvoiceTotalWrapper" class="glass-panel" style="padding: 16px; margin-bottom: 24px; text-align:center; background:rgba(123,168,132,0.05); border-color:rgba(123, 168, 132, 0.2); box-shadow:none;">
@@ -868,6 +895,7 @@
                                     <option value="ES">Español (Spanish)</option>
                                     <option value="FR">Français (French)</option>
                                     <option value="DE">Deutsch (German)</option>
+                                    <option value="IT">Italiano (Italian)</option>
                                 </select>
                             </div>
                             <div style="display: flex; align-items: flex-end;">
@@ -967,7 +995,7 @@
         let userId = null;
         let revenueSpendChartInstance = null;
         let locationSalesChartInstance = null;
-        let feedbackStarsChartInstance = null;
+        let productPerformanceChartInstance = null;
         let locationsCache = [];
         let productsCache = [];
         let inventoryCache = [];
@@ -1377,6 +1405,35 @@
                 'sub-Customers': 'Kundenkaufakten und -verzeichnisse verwalten.',
                 'sub-Inbox': 'Systembenachrichtigungen und Ankündigungen',
                 'sub-Settings': 'Betriebssystem-Präferenzen.'
+            },
+            'IT': {
+                'menu-Overview': 'Panoramica',
+                'menu-Analytics': 'Analisi',
+                'menu-Sales': 'Registro Vendite',
+                'menu-Inventory': 'Inventario',
+                'menu-Reviews': 'Recensioni QR',
+                'menu-CRM': 'CRM e Campagne',
+                'menu-Customers': 'Clienti',
+                'menu-Settings': 'Impostazioni',
+                'menu-Inbox': 'Posta in arrivo',
+                'title-Overview': 'Centro Operativo',
+                'title-Analytics': 'Centro Analisi',
+                'title-Sales': 'Registro Vendite',
+                'title-Inventory': 'Catalogo Inventario',
+                'title-Reviews': 'Flusso Recensioni QR',
+                'title-Crm': 'CRM e Campagne',
+                'title-Customers': 'Elenco Clienti',
+                'title-Inbox': 'Posta in arrivo',
+                'title-Settings': 'Pannello Impostazioni',
+                'sub-Overview': 'Statistiche di riepilogo operativo',
+                'sub-Analytics': 'Analisi di conversione e prodotti',
+                'sub-Sales': 'Registra e calcola le fatture delle transazioni.',
+                'sub-Inventory': 'Gestisci lo stock di prodotti, informazioni SKU e prezzi.',
+                'sub-Reviews': 'Scheda QR stampabile e flusso recensioni.',
+                'sub-Crm': 'Gestisci campagne, segmenti di marketing e conversioni.',
+                'sub-Customers': 'Gestisci i dati e lo storico acquisti dei clienti.',
+                'sub-Inbox': 'Notifiche e annunci di sistema',
+                'sub-Settings': 'Preferenze operative del sistema.'
             }
         };
 
@@ -2037,11 +2094,34 @@
                 
                 // Update metrics elements
                 document.getElementById('val-conversion').textContent = `${data.conversion_rate}%`;
-                document.getElementById('val-retention').textContent = `${data.retention_rate}%`;
+                document.getElementById('val-products-sold').textContent = `${data.total_products_sold} units`;
                 
                 // Draw charts
                 renderLocationSalesChart(data.locations);
-                renderFeedbackStarsChart(data.ratings);
+                renderProductPerformanceChart(data.products);
+
+                // Populate products performance table
+                const tbody = document.getElementById('analyticsProductsTableBody');
+                if (tbody) {
+                    const allData = data.products.all_data || [];
+                    if (allData.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">No product data available yet.</td></tr>';
+                    } else {
+                        tbody.innerHTML = allData.map(p => `
+                            <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                                <td style="padding: 10px 14px; font-weight: 600; color: var(--text-primary);">${escapeHtml(p.name)}</td>
+                                <td style="padding: 10px 14px; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(p.sku || 'N/A')}</td>
+                                <td style="padding: 10px 14px; text-align: center; font-weight: 700; color: var(--accent-green);">${p.units_sold}</td>
+                                <td style="padding: 10px 14px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(p.revenue)}</td>
+                                <td style="padding: 10px 14px; text-align: center;">
+                                    <span class="badge ${p.stock === 0 ? 'badge-danger' : (p.stock < 15 ? 'badge-warning' : 'badge-success')}" style="padding: 2px 6px; font-size: 0.65rem; border-radius: 4px;">
+                                        ${p.stock} units
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
             } catch(e) {
                 console.error("Analytics load error", e);
             }
@@ -2074,18 +2154,18 @@
             });
         }
 
-        function renderFeedbackStarsChart(starData) {
-            const ctx = document.getElementById('feedbackStarsChart').getContext('2d');
-            if (feedbackStarsChartInstance) feedbackStarsChartInstance.destroy();
+        function renderProductPerformanceChart(prodData) {
+            const ctx = document.getElementById('productPerformanceChart').getContext('2d');
+            if (productPerformanceChartInstance) productPerformanceChartInstance.destroy();
             
-            feedbackStarsChartInstance = new Chart(ctx, {
+            productPerformanceChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: starData.labels,
+                    labels: prodData.labels,
                     datasets: [{
-                        label: 'Reviews Count',
-                        data: starData.data,
-                        backgroundColor: '#fbbf24',
+                        label: 'Units Sold',
+                        data: prodData.units,
+                        backgroundColor: '#7ba884',
                         borderRadius: 4
                     }]
                 },
@@ -2141,66 +2221,73 @@
 
             container.innerHTML = items.map(sale => {
                 const itemsListHTML = (sale.items || []).map(item => `
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(123, 168, 132, 0.03); border: 1px solid rgba(123, 168, 132, 0.06); padding: 4px 8px; border-radius: 5px; font-size: 0.75rem;">
-                        <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(123, 168, 132, 0.03); border: 1px solid rgba(123, 168, 132, 0.06); padding: 3px 6px; border-radius: 5px; font-size: 0.72rem;">
+                        <div style="display: flex; align-items: center; gap: 4px;">
                             <span style="font-weight: 700; color: var(--text-primary);">${escapeHtml(item.item_name)}</span>
-                            <span style="background: var(--accent-green); color: white; padding: 1px 4px; border-radius: 3px; font-size: 0.65rem; font-weight: 700;">x${item.quantity}</span>
+                            <span style="background: var(--accent-green); color: white; padding: 0px 3px; border-radius: 3px; font-size: 0.6rem; font-weight: 700;">x${item.quantity}</span>
                         </div>
                         <span style="font-weight: 600; color: var(--accent-green);">${formatCurrency(item.amount)}</span>
                     </div>
                 `).join('');
 
+                const promoBadge = sale.promo_code ? `
+                    <span class="badge" style="background: #e8f0eb; color: #5a6e63; font-weight: 700; border: 1px solid rgba(123, 168, 132, 0.2); padding: 2px 6px; border-radius: 4px; font-size: 0.6rem; text-transform: uppercase;">
+                        Promo: ${escapeHtml(sale.promo_code)}
+                    </span>
+                ` : '';
+
                 return `
-                    <div class="log-card glass-panel" style="border-left: 5px solid var(--accent-green); padding: 14px 18px; background: #FFFDF9; border-color: rgba(123, 168, 132, 0.15); box-shadow: var(--shadow-soft);">
-                        <div class="log-card-left" style="gap: 6px; flex: 1; min-width: 0;">
+                    <div class="log-card glass-panel" style="border-left: 5px solid var(--accent-green); padding: 10px 14px; background: #FFFDF9; border-color: rgba(123, 168, 132, 0.1); box-shadow: var(--shadow-soft); display: flex; align-items: stretch; justify-content: space-between;">
+                        <div class="log-card-left" style="gap: 4px; flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between;">
                             <!-- Header Info -->
-                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom: 2px;">
-                                <span style="font-family: var(--font-sans); font-size:1rem; font-weight:700; color:var(--text-primary);">Sale #${sale.id}</span>
-                                <span class="badge" style="background: rgba(123, 168, 132, 0.08); color: var(--accent-green); font-weight:700; border: 1px solid rgba(123, 168, 132, 0.15); padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em;">
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom: 1px;">
+                                <span style="font-family: var(--font-sans); font-size:0.85rem; font-weight:700; color:var(--text-primary);">Sale #${sale.id}</span>
+                                <span class="badge" style="background: rgba(123, 168, 132, 0.08); color: var(--accent-green); font-weight:700; border: 1px solid rgba(123, 168, 132, 0.15); padding: 1px 4px; border-radius: 4px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.02em;">
                                     ${escapeHtml(sale.location || 'Unknown')}
                                 </span>
+                                ${promoBadge}
                             </div>
 
                             <!-- Items Purchased -->
-                            <div style="display: flex; flex-direction: column; gap: 4px; margin: 2px 0 6px 0; width: 100%;">
-                                ${itemsListHTML || '<div style="color: var(--text-muted); font-size: 0.75rem;">No items purchased</div>'}
+                            <div style="display: flex; flex-direction: column; gap: 3px; margin: 1px 0 4px 0; width: 100%;">
+                                ${itemsListHTML || '<div style="color: var(--text-muted); font-size: 0.7rem;">No items purchased</div>'}
                             </div>
                             
                             <!-- Customer Details -->
-                            <div style="display:flex; flex-direction:column; gap:2px; margin-top:1px;">
-                                <div style="display:flex; align-items:center; gap:6px; color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">
-                                    <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.7;">
+                            <div style="display:flex; flex-direction:column; gap:1px; margin-top:1px;">
+                                <div style="display:flex; align-items:center; gap:5px; color: var(--text-primary); font-weight: 600; font-size: 0.78rem;">
+                                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.7; flex-shrink: 0;">
                                         <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3Zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
                                     </svg>
-                                    <span>${escapeHtml(sale.customer_name || 'Walk-in Customer')}</span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(sale.customer_name || 'Walk-in Customer')}</span>
                                 </div>
-                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size: 0.75rem; color: var(--text-secondary); margin-top: 1px;">
-                                    <div style="display:flex; align-items:center; gap:4px;">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6;">
+                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size: 0.7rem; color: var(--text-secondary); margin-top: 1px;">
+                                    <div style="display:flex; align-items:center; gap:3px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sale.customer_email || 'N/A')}">
+                                        <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6; flex-shrink: 0;">
                                             <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.758 2.855L15 11.114v-5.73zm-.03 6.862L10.5 9.172 8 10.672 5.5 9.172 1.03 12.245A1 1 0 0 0 2 13h12a1 1 0 0 0 .97-.755zM1 11.114l4.758-2.876L1 5.383v5.73z"/>
                                         </svg>
-                                        <code>${escapeHtml(sale.customer_email || 'N/A')}</code>
+                                        <span>${escapeHtml(sale.customer_email || 'N/A')}</span>
                                     </div>
-                                    <div style="display:flex; align-items:center; gap:4px;">
-                                        <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6;">
+                                    <div style="display:flex; align-items:center; gap:3px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(sale.customer_phone || 'N/A')}">
+                                        <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6; flex-shrink: 0;">
                                             <path d="M1.885.511a1.745 1.745 0 0 1 2.61.163L6.29 2.98c.329.423.445.974.315 1.494l-.547 2.19a.678.678 0 0 0 .178.643l2.457 2.457a.678.678 0 0 0 .644.178l2.189-.547a1.745 1.745 0 0 1 1.494.315l2.306 1.794c.829.645.905 1.87.163 2.611l-1.034 1.034c-.74.74-1.846 1.065-2.877.702a18.634 18.634 0 0 1-7.01-4.42 18.634 18.634 0 0 1-4.42-7.009c-.362-1.03-.037-2.137.703-2.877L1.885.511z"/>
                                         </svg>
-                                        <code>${escapeHtml(sale.customer_phone || 'N/A')}</code>
+                                        <span>${escapeHtml(sale.customer_phone || 'N/A')}</span>
                                     </div>
                                 </div>
                             </div>
                             
                             <!-- Timestamp -->
-                            <div style="display:flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--text-muted); margin-top:1px;">
-                                <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6;">
+                            <div style="display:flex; align-items:center; gap:3px; font-size:0.68rem; color:var(--text-muted); margin-top: 1px;">
+                                <svg width="9" height="9" fill="currentColor" viewBox="0 0 16 16" style="opacity: 0.6; flex-shrink: 0;">
                                     <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
                                     <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
                                 </svg>
                                 <span>${formatDateTime(sale.timestamp)}</span>
                             </div>
                         </div>
-                        <div class="log-card-right" style="margin-left: 16px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; gap:8px; flex-shrink: 0;">
-                            <div style="font-size:1.1rem; font-weight:800; color:#43824E; background:#E2F3E5; padding:4px 10px; border-radius:8px; border: 1px solid rgba(123, 168, 132, 0.15); display: inline-block;">
+                        <div class="log-card-right" style="margin-left: 12px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; gap:6px; flex-shrink: 0;">
+                            <div style="font-size:0.95rem; font-weight:700; color:#43824E; background:#E2F3E5; padding:2px 8px; border-radius:6px; border: 1px solid rgba(123, 168, 132, 0.1); display: inline-block; white-space: nowrap;">
                                 ${formatCurrency(sale.amount)}
                             </div>
                             <div class="log-card-actions">
@@ -3173,7 +3260,7 @@
             win.document.close();
         }
 
-        function broadcastCampaign(platform) {
+        async function broadcastCampaign(platform) {
             const name = document.getElementById('mktCampaignName').value;
             const nameError = validateRequiredString(name, "Campaign Name");
             if (nameError) {
@@ -3196,6 +3283,14 @@
             const selectedEmails = Array.from(selectedCheckboxes).map(cb => cb.getAttribute('data-email'));
             const targets = mktAudienceCache.filter(c => selectedEmails.includes(c.email));
             
+            // Save to DB first to generate campaign ID and tracking records
+            const segmentSelect = document.getElementById('mktAudienceSegment');
+            const segment = segmentSelect.options[segmentSelect.selectedIndex].text;
+            const coupon = document.getElementById('mktCouponCode').value || '';
+            
+            const campaign = await saveCampaignHistory(name, segment, platform, coupon, rawText, targets.length, selectedEmails);
+            const campaignId = campaign ? campaign.id : 0;
+
             if (platform === 'whatsapp') {
                 const total = targets.length;
                 if (!confirm(`You are about to launch WhatsApp Web chats for ${total} customer(s). They will open in new browser tabs. Continue?`)) {
@@ -3205,7 +3300,13 @@
                 targets.forEach(target => {
                     if (target.phone && target.phone !== 'N/A') {
                         const phone = target.phone.replace(/[^0-9]/g, '');
-                        const msg = replaceCampaignTags(rawText, target);
+                        const trackingUrl = `${window.location.origin}/promo?c=${campaignId}&e=${encodeURIComponent(target.email)}`;
+                        let msg = replaceCampaignTags(rawText, target);
+                        if (msg.includes('{tracking_link}')) {
+                            msg = msg.replaceAll('{tracking_link}', trackingUrl);
+                        } else {
+                            msg = msg + `\n\nShop Offer: ${trackingUrl}`;
+                        }
                         const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
                         window.open(url, '_blank');
                     }
@@ -3218,24 +3319,24 @@
                 
                 targets.forEach(target => {
                     if (target.email && target.email !== 'N/A') {
-                        const msg = replaceCampaignTags(rawText, target);
+                        const trackingUrl = `${window.location.origin}/promo?c=${campaignId}&e=${encodeURIComponent(target.email)}`;
+                        let msg = replaceCampaignTags(rawText, target);
+                        if (msg.includes('{tracking_link}')) {
+                            msg = msg.replaceAll('{tracking_link}', trackingUrl);
+                        } else {
+                            msg = msg + `\n\nShop Offer: ${trackingUrl}`;
+                        }
                         const bizName = localStorage.getItem('user_business_name') || 'Our Business';
                         const url = `mailto:${target.email}?subject=${encodeURIComponent('Special Offer from ' + bizName)}&body=${encodeURIComponent(msg)}`;
                         window.open(url, '_blank');
                     }
                 });
             } else if (platform === 'print') {
-                printMultipleFlyers(targets, rawText);
+                printMultipleFlyers(targets, rawText, campaignId);
             }
-
-            // Save to DB
-            const segmentSelect = document.getElementById('mktAudienceSegment');
-            const segment = segmentSelect.options[segmentSelect.selectedIndex].text;
-            const coupon = document.getElementById('mktCouponCode').value || '';
-            saveCampaignHistory(name, segment, platform, coupon, rawText, targets.length);
         }
 
-        function printMultipleFlyers(targets, rawText) {
+        function printMultipleFlyers(targets, rawText, campaignId) {
             const win = window.open('', '_blank');
             const bizName = localStorage.getItem('user_business_name') || 'Our Business';
             const coupon = document.getElementById('mktCouponCode').value || 'WELCOME10';
@@ -3244,7 +3345,13 @@
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(reviewUrl)}`;
             
             const flyersHtml = targets.map(customer => {
-                const message = replaceCampaignTags(rawText, customer);
+                const trackingUrl = `${window.location.origin}/promo?c=${campaignId}&e=${encodeURIComponent(customer.email)}`;
+                let message = replaceCampaignTags(rawText, customer);
+                if (message.includes('{tracking_link}')) {
+                    message = message.replaceAll('{tracking_link}', trackingUrl);
+                } else {
+                    message = message + `\n\nShop Offer: ${trackingUrl}`;
+                }
                 return `
                     <div class="flyer-card">
                         <div class="header">${escapeHtml(bizName)}</div>
@@ -3268,12 +3375,6 @@
                 <head>
                     <title>Print Campaign Flyers</title>
                     <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fff; color: #333; margin: 0; padding: 20px; }
-                        .flyers-grid {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 20px;
-                        }
                         .flyer-card {
                             border: 3px dashed #7ba884;
                             background: #fffdf9;
@@ -3365,7 +3466,7 @@
 
         let campaignsCache = [];
 
-        async function saveCampaignHistory(name, segment, channel, coupon, message_body, recipients_count) {
+        async function saveCampaignHistory(name, segment, channel, coupon, message_body, recipients_count, target_emails) {
             const token = localStorage.getItem('user_token');
             try {
                 const res = await fetch('/api/dashboard/crm/campaigns', {
@@ -3380,15 +3481,19 @@
                         channel,
                         coupon_code: coupon || null,
                         message_body,
-                        recipients_count
+                        recipients_count,
+                        target_emails: target_emails || []
                     })
                 });
                 if (res.ok) {
+                    const data = await res.json();
                     loadCampaignsHistory();
+                    return data;
                 }
             } catch(e) {
                 console.error("Failed to save campaign execution", e);
             }
+            return null;
         }
 
         async function loadCampaignsHistory() {
@@ -3428,21 +3533,57 @@
             }
         }
 
-        function viewCampaignDetails(campaignId) {
+        async function viewCampaignDetails(campaignId) {
             const c = campaignsCache.find(x => x.id === campaignId);
-            if (c) {
-                openCampaignDetailModal(c.name, c.channel, c.segment, c.coupon_code, c.sent_at, c.message_body);
-            }
-        }
+            if (!c) return;
+            
+            document.getElementById('campaignDetailTitle').textContent = c.name;
+            document.getElementById('campaignDetailChannel').textContent = c.channel.toUpperCase();
+            document.getElementById('campaignDetailSegment').textContent = c.segment;
+            document.getElementById('campaignDetailCoupon').textContent = c.coupon_code || 'N/A';
+            document.getElementById('campaignDetailDate').textContent = formatDateTime(c.sent_at);
+            document.getElementById('campaignDetailBody').textContent = c.message_body;
 
-        function openCampaignDetailModal(name, channel, segment, coupon, date, body) {
-            document.getElementById('campaignDetailTitle').textContent = name;
-            document.getElementById('campaignDetailChannel').textContent = channel.toUpperCase();
-            document.getElementById('campaignDetailSegment').textContent = segment;
-            document.getElementById('campaignDetailCoupon').textContent = coupon || 'N/A';
-            document.getElementById('campaignDetailDate').textContent = formatDateTime(date);
-            document.getElementById('campaignDetailBody').textContent = body;
+            const token = localStorage.getItem('user_token');
+            const tbody = document.getElementById('campaignDetailTrackingBody');
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--text-secondary);">Loading logs...</td></tr>';
+            
             document.getElementById('campaignDetailModal').style.display = 'flex';
+
+            try {
+                const res = await fetch(`/api/dashboard/crm/campaigns/${campaignId}/tracking`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const logs = await res.json();
+                    if (logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--text-muted);">No tracked clicks recorded.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = logs.map(l => {
+                        const clickBadge = l.clicked 
+                            ? `<span class="badge badge-success" style="padding:2px 6px; font-size:0.65rem;" title="${l.clicked_at ? formatDateTime(l.clicked_at) : ''}">Yes</span>` 
+                            : '<span class="badge badge-secondary" style="padding:2px 6px; font-size:0.65rem; background:#eaeaea; color:#888;">No</span>';
+                        
+                        const convBadge = l.converted 
+                            ? `<span class="badge badge-success" style="padding:2px 6px; font-size:0.65rem; background:#43824e;">Yes</span>` 
+                            : '<span class="badge badge-secondary" style="padding:2px 6px; font-size:0.65rem; background:#eaeaea; color:#888;">No</span>';
+
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(0,0,0,0.03);">
+                                <td style="padding: 6px 10px; font-family: monospace; font-size: 0.75rem;">${escapeHtml(l.customer_email)}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${clickBadge}</td>
+                                <td style="padding: 6px 10px; text-align: center;">${convBadge}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--danger);">Failed to load tracking data.</td></tr>';
+                }
+            } catch(e) {
+                console.error("Tracking load error", e);
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:10px; color:var(--danger);">Failed to connect.</td></tr>';
+            }
         }
 
         function closeCampaignDetailModal() {
@@ -3841,6 +3982,7 @@
                 const customer_name = document.getElementById('saleCustomerName').value;
                 const customer_email = document.getElementById('saleCustomerEmail').value;
                 const customer_phone = document.getElementById('saleCustomerPhone').value;
+                const promo_code = document.getElementById('salePromoCode').value.trim() || null;
 
                 if (editingSaleId) {
                     try {
@@ -3889,6 +4031,7 @@
                                 customer_name,
                                 customer_email,
                                 customer_phone,
+                                promo_code,
                                 items: currentSaleCart.map(item => ({
                                     product_id: item.product_id,
                                     quantity: item.quantity
@@ -4508,8 +4651,25 @@
                 </div>
                 <div style="border-top: 1px solid var(--border-color); padding-top: 14px;">
                     <strong>Message Content:</strong>
-                    <div id="campaignDetailBody" style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; margin-top: 8px; max-height: 250px; overflow-y: auto;">
+                    <div id="campaignDetailBody" style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; margin-top: 8px; max-height: 180px; overflow-y: auto;">
                         Message goes here...
+                    </div>
+                </div>
+                <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 4px;">
+                    <strong>Recipient Customer Tracking & Click Logs:</strong>
+                    <div style="max-height: 180px; overflow-y: auto; margin-top: 8px; border: 1px solid rgba(0,0,0,0.05); border-radius: var(--radius-sm);">
+                        <table class="premium-table" style="font-size: 0.8rem; margin: 0; width: 100%; text-align: left; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: rgba(123, 168, 132, 0.05); border-bottom: 1px solid rgba(123, 168, 132, 0.1);">
+                                    <th style="padding: 6px 10px; font-weight: 700;">Customer Email</th>
+                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Clicked Link?</th>
+                                    <th style="padding: 6px 10px; font-weight: 700; text-align: center;">Converted?</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignDetailTrackingBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

@@ -70,6 +70,10 @@ def read_onboarding():
 def read_dashboard():
     return FileResponse("frontend/dashboard.html")
 
+@app.get("/promo")
+def read_promo():
+    return FileResponse("frontend/promo.html")
+
 @app.get("/review/{user_id}")
 def read_public_review(user_id: int):
     return FileResponse("frontend/public_review.html")

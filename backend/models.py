@@ -121,6 +121,7 @@ class Sale(Base):
     customer_name = Column(String, nullable=True)
     customer_email = Column(String, nullable=True)
     customer_phone = Column(String, nullable=True)
+    promo_code = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="sales")
@@ -169,4 +170,20 @@ class MarketingCampaign(Base):
     sent_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="marketing_campaigns")
+    tracking_records = relationship("CampaignCustomerTracking", back_populates="campaign", cascade="all, delete-orphan")
+
+
+class CampaignCustomerTracking(Base):
+    __tablename__ = "campaign_customer_tracking"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("marketing_campaigns.id"), nullable=False)
+    customer_email = Column(String, index=True, nullable=False)
+    clicked = Column(Boolean, default=False)
+    clicked_at = Column(DateTime, nullable=True)
+    converted = Column(Boolean, default=False)
+    sale_id = Column(Integer, ForeignKey("sales.id"), nullable=True)
+
+    campaign = relationship("MarketingCampaign", back_populates="tracking_records")
+    sale = relationship("Sale")
 
