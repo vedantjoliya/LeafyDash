@@ -4,6 +4,11 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./database.db")
 
+# In serverless environments like Vercel, relative paths for SQLite databases
+# fail because the filesystem is read-only. We rewrite relative sqlite paths to use /tmp.
+if os.getenv("VERCEL") and DATABASE_URL.startswith("sqlite:///."):
+    DATABASE_URL = DATABASE_URL.replace("sqlite:///.", "sqlite:////tmp", 1)
+
 # For PostgreSQL URL from Heroku/Render etc., convert postgres:// to postgresql://
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
