@@ -173,6 +173,9 @@ class MarketingCampaign(Base):
     message_body = Column(Text, nullable=False)
     recipients_count = Column(Integer, default=0)
     sent_at = Column(DateTime, default=datetime.datetime.utcnow)
+    start_date = Column(DateTime, nullable=True)
+    end_date = Column(DateTime, nullable=True)
+    status = Column(String, default="active")  # "active" or "stopped"
 
     user = relationship("User", back_populates="marketing_campaigns")
     tracking_records = relationship("CampaignCustomerTracking", back_populates="campaign", cascade="all, delete-orphan")

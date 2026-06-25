@@ -48,6 +48,7 @@ function getCurrencySymbol() {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
     const format = localStorage.getItem('intl_date_format') || 'MM/DD/YYYY';
     
     const dd = String(date.getDate()).padStart(2, '0');
@@ -67,6 +68,7 @@ function formatDate(dateString) {
 function formatDateTime(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'N/A';
     const datePart = formatDate(dateString);
     const timePart = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     return `${datePart} ${timePart}`;

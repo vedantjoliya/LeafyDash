@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
 from typing import List
-import traceback
 
 from ..database import get_db
 from ..models import User, ContactMessage, AdminMessage
@@ -13,12 +11,9 @@ router = APIRouter(prefix="/api/admin", tags=["Admin Operations"])
 
 @router.get("/users", response_model=List[UserOut])
 def get_users(db: Session = Depends(get_db), current_admin: str = Depends(get_current_admin)):
-    try:
-        users = db.query(User).order_by(User.id.desc()).all()
-        return users
-    except Exception as e:
-        tb = traceback.format_exc()
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}\n{tb}")
+    # Retrieve all users
+    users = db.query(User).order_by(User.created_at.desc()).all()
+    return users
 
 @router.post("/approve/{user_id}")
 def approve_user(user_id: int, db: Session = Depends(get_db), current_admin: str = Depends(get_current_admin)):

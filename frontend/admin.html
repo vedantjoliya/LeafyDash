@@ -316,32 +316,7 @@
                     return;
                 }
                 
-                // Show actual server error if not OK
-                if (!response.ok) {
-                    let errDetail = `Server error ${response.status}`;
-                    try {
-                        const errBody = await response.json();
-                        errDetail = errBody.detail || JSON.stringify(errBody);
-                    } catch (_) {}
-                    panelAlert.innerHTML = `
-                        <div class="alert-box alert-danger">
-                            <span>Error: ${errDetail}</span>
-                        </div>
-                    `;
-                    return;
-                }
-                
                 const users = await response.json();
-                
-                // Guard: API must return an array
-                if (!Array.isArray(users)) {
-                    panelAlert.innerHTML = `
-                        <div class="alert-box alert-danger">
-                            <span>Error: Unexpected response from server: ${JSON.stringify(users)}</span>
-                        </div>
-                    `;
-                    return;
-                }
                 
                 const pending = users.filter(u => u.status === 'pending');
                 const active = users.filter(u => u.status !== 'pending');
@@ -399,10 +374,9 @@
             } catch (err) {
                 panelAlert.innerHTML = `
                     <div class="alert-box alert-danger">
-                        <span>Error: ${err.message || 'Network error. Check console for details.'}</span>
+                        <span>Error: Failed to load users list.</span>
                     </div>
                 `;
-                console.error('loadUsers error:', err);
             }
         }
 

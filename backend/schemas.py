@@ -350,6 +350,8 @@ class MarketingCampaignCreate(BaseModel):
     message_body: str
     recipients_count: int
     target_emails: Optional[List[str]] = []
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
     @field_validator("name")
     @classmethod
@@ -379,7 +381,10 @@ class MarketingCampaignOut(BaseModel):
     discount_value: Optional[float] = None
     message_body: str
     recipients_count: int
-    sent_at: datetime
+    sent_at: Optional[datetime] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    status: str
 
     class Config:
         from_attributes = True
@@ -396,6 +401,7 @@ class CampaignCustomerTrackingOut(BaseModel):
     customer_name: Optional[str] = None
     sale_amount: Optional[float] = None
     items_purchased: Optional[str] = None
+    is_new_customer: Optional[bool] = False
 
     class Config:
         from_attributes = True

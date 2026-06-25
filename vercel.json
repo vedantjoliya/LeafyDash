@@ -3,14 +3,7 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb",
-        "includeFiles": [
-          "backend/**",
-          "frontend/**"
-        ]
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [

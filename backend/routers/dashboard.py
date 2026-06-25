@@ -239,6 +239,19 @@ def get_overview_data(
         "labels": list(categories_map.keys()),
         "data": [round(v, 2) for v in categories_map.values()]
     }
+    
+    # Calculate customer retention rate (percentage of unique customers who purchased >= 2 times)
+    customer_sales_count = {}
+    for s in sales:
+        if s.customer_email:
+            email_clean = s.customer_email.strip().lower()
+            customer_sales_count[email_clean] = customer_sales_count.get(email_clean, 0) + 1
+            
+    total_customers = len(customer_sales_count)
+    returning_customers = sum(1 for count in customer_sales_count.values() if count >= 2)
+    customer_retention = 0.0
+    if total_customers > 0:
+        customer_retention = round((returning_customers / total_customers) * 100, 1)
         
     return {
         "user_id": current_user.id,
@@ -252,6 +265,7 @@ def get_overview_data(
             "stock_count": sum(p.stock for p in products),
             "reviews_count": len(reviews),
             "avg_rating": avg_rating,
+            "customer_retention": customer_retention
         },
         "chart": {
             "labels": chart_labels,
@@ -288,7 +302,8 @@ def get_analytics_data(
             "sku": p.sku or "N/A",
             "units_sold": 0,
             "revenue": 0.0,
-            "stock": p.stock
+            "stock": p.stock,
+            "price": p.price
         } for p in products
     }
     
@@ -303,7 +318,8 @@ def get_analytics_data(
                     "sku": "N/A",
                     "units_sold": item.quantity,
                     "revenue": item.amount,
-                    "stock": 0
+                    "stock": 0,
+                    "price": 0.0
                 }
                 
     product_list = list(product_performance.values())
@@ -338,6 +354,41 @@ def get_analytics_data(
     stock_labels = [item[0] for item in sorted_stock_values]
     stock_data = [round(item[1], 2) for item in sorted_stock_values]
     
+    # Campaigns performance
+    campaigns = db.query(MarketingCampaign).filter(MarketingCampaign.user_id == current_user.id).all()
+    campaign_performance = []
+    for c in campaigns:
+        clicks = db.query(CampaignCustomerTracking).filter(CampaignCustomerTracking.campaign_id == c.id, CampaignCustomerTracking.clicked == True).count()
+        conversions = db.query(CampaignCustomerTracking).filter(CampaignCustomerTracking.campaign_id == c.id, CampaignCustomerTracking.converted == True).count()
+        campaign_performance.append({
+            "name": c.name,
+            "clicks": clicks,
+            "conversions": conversions
+        })
+    
+    # Monthly operating expenses trend (last 6 months)
+    expenses = db.query(OperationalExpense).filter(OperationalExpense.user_id == current_user.id).all()
+    employees = db.query(Employee).filter(Employee.user_id == current_user.id, Employee.status == "Active").all()
+    payroll_monthly = sum(emp.salary for emp in employees)
+    
+    today = datetime.date.today()
+    month_order = []
+    for i in range(5, -1, -1):
+        year_offset = (today.month - i - 1) // 12
+        month_index = (today.month - i - 1) % 12 + 1
+        label_date = datetime.date(today.year + year_offset, month_index, 1)
+        month_label = label_date.strftime("%b %Y")
+        month_order.append(month_label)
+        
+    monthly_exp_data = {label: 0.0 for label in month_order}
+    for exp in expenses:
+        label = exp.date.strftime("%b %Y")
+        if label in monthly_exp_data:
+            monthly_exp_data[label] += exp.amount
+            
+    expense_trend_labels = list(monthly_exp_data.keys())
+    expense_trend_data = [round(val + payroll_monthly, 2) for val in monthly_exp_data.values()]
+
     return {
         "locations": {
             "labels": location_labels if location_labels else ["Online"],
@@ -357,6 +408,15 @@ def get_analytics_data(
         "stock_values": {
             "labels": stock_labels if stock_labels else ["No Stock"],
             "data": stock_data if stock_data else [0.0]
+        },
+        "campaigns_perf": {
+            "labels": [c["name"] for c in campaign_performance],
+            "clicks": [c["clicks"] for c in campaign_performance],
+            "conversions": [c["conversions"] for c in campaign_performance]
+        },
+        "monthly_expenses": {
+            "labels": expense_trend_labels,
+            "data": expense_trend_data
         }
     }
 
@@ -381,6 +441,16 @@ def validate_promo(
     ).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Promo code not found")
+    
+    # Validation checks
+    now = datetime.datetime.utcnow()
+    if campaign.status == "stopped":
+        raise HTTPException(status_code=400, detail="This promo campaign has been stopped.")
+    if campaign.start_date and now < campaign.start_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has not started yet.")
+    if campaign.end_date and now > campaign.end_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has expired.")
+
     return {
         "coupon_code": campaign.coupon_code,
         "discount_type": campaign.discount_type,
@@ -405,6 +475,15 @@ def add_sale(
         ).first()
         if not campaign_found:
             raise HTTPException(status_code=400, detail="Invalid promo code.")
+        
+        # Validation checks
+        now = datetime.datetime.utcnow()
+        if campaign_found.status == "stopped":
+            raise HTTPException(status_code=400, detail="This promo campaign has been stopped.")
+        if campaign_found.start_date and now < campaign_found.start_date:
+            raise HTTPException(status_code=400, detail="This promo campaign has not started yet.")
+        if campaign_found.end_date and now > campaign_found.end_date:
+            raise HTTPException(status_code=400, detail="This promo campaign has expired.")
 
     # Verify location exists
     loc = db.query(Location).filter(
@@ -588,9 +667,8 @@ def add_product(
     if image and image.filename:
         ext = os.path.splitext(image.filename)[1]
         filename = f"{uuid.uuid4()}{ext}"
-        upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, filename)
+        os.makedirs("uploads", exist_ok=True)
+        file_path = os.path.join("uploads", filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
         image_path = f"/uploads/{filename}"
@@ -648,8 +726,6 @@ def update_product(
         if product.image_path:
             try:
                 old_path = product.image_path.lstrip('/')
-                if os.getenv("VERCEL"):
-                    old_path = old_path.replace("uploads", "/tmp/uploads", 1)
                 if os.path.exists(old_path):
                     os.remove(old_path)
             except Exception as e:
@@ -657,9 +733,8 @@ def update_product(
                 
         ext = os.path.splitext(image.filename)[1]
         filename = f"{uuid.uuid4()}{ext}"
-        upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, filename)
+        os.makedirs("uploads", exist_ok=True)
+        file_path = os.path.join("uploads", filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
         product.image_path = f"/uploads/{filename}"
@@ -685,8 +760,6 @@ def delete_product(
     if product.image_path:
         try:
             img_path = product.image_path.lstrip('/')
-            if os.getenv("VERCEL"):
-                img_path = img_path.replace("uploads", "/tmp/uploads", 1)
             if os.path.exists(img_path):
                 os.remove(img_path)
         except Exception as e:
@@ -1090,7 +1163,10 @@ def create_marketing_campaign(
         discount_type=campaign_data.discount_type,
         discount_value=campaign_data.discount_value,
         message_body=campaign_data.message_body,
-        recipients_count=campaign_data.recipients_count
+        recipients_count=campaign_data.recipients_count,
+        start_date=campaign_data.start_date,
+        end_date=campaign_data.end_date,
+        status="active"
     )
     db.add(campaign)
     db.commit()
@@ -1109,6 +1185,42 @@ def create_marketing_campaign(
                 db.add(tracking)
         db.commit()
 
+    return campaign
+
+
+@router.post("/api/dashboard/crm/campaigns/{campaign_id}/start", response_model=MarketingCampaignOut)
+def start_campaign(
+    campaign_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    campaign = db.query(MarketingCampaign).filter(
+        MarketingCampaign.id == campaign_id,
+        MarketingCampaign.user_id == current_user.id
+    ).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    campaign.status = "active"
+    db.commit()
+    db.refresh(campaign)
+    return campaign
+
+
+@router.post("/api/dashboard/crm/campaigns/{campaign_id}/stop", response_model=MarketingCampaignOut)
+def stop_campaign(
+    campaign_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    campaign = db.query(MarketingCampaign).filter(
+        MarketingCampaign.id == campaign_id,
+        MarketingCampaign.user_id == current_user.id
+    ).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    campaign.status = "stopped"
+    db.commit()
+    db.refresh(campaign)
     return campaign
 
 
@@ -1144,6 +1256,7 @@ def get_campaign_tracking(
         t.customer_name = "N/A"
         t.sale_amount = 0.0
         t.items_purchased = "N/A"
+        t.is_new_customer = False
         if t.sale_id:
             sale = db.query(Sale).filter(Sale.id == t.sale_id).first()
             if sale:
@@ -1151,6 +1264,12 @@ def get_campaign_tracking(
                 t.sale_amount = sale.amount
                 if sale.items:
                     t.items_purchased = ", ".join(f"{item.item_name} (x{item.quantity})" for item in sale.items)
+                # Count total purchases for this email to determine if they are a new customer
+                sales_count = db.query(Sale).filter(
+                    Sale.user_id == current_user.id,
+                    Sale.customer_email == t.customer_email
+                ).count()
+                t.is_new_customer = (sales_count <= 1)
 
     return trackings
 
@@ -1165,6 +1284,15 @@ def get_public_promo_info(
     campaign = db.query(MarketingCampaign).filter(MarketingCampaign.id == c).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
+
+    # Validation checks
+    now = datetime.datetime.utcnow()
+    if campaign.status == "stopped":
+        raise HTTPException(status_code=400, detail="This promo campaign has been stopped.")
+    if campaign.start_date and now < campaign.start_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has not started yet.")
+    if campaign.end_date and now > campaign.end_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has expired.")
         
     tracking = db.query(CampaignCustomerTracking).filter(
         CampaignCustomerTracking.campaign_id == c,
@@ -1228,6 +1356,15 @@ def public_promo_buy(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
         
+    # Validation checks
+    now = datetime.datetime.utcnow()
+    if campaign.status == "stopped":
+        raise HTTPException(status_code=400, detail="This promo campaign has been stopped.")
+    if campaign.start_date and now < campaign.start_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has not started yet.")
+    if campaign.end_date and now > campaign.end_date:
+        raise HTTPException(status_code=400, detail="This promo campaign has expired.")
+
     tracking = db.query(CampaignCustomerTracking).filter(
         CampaignCustomerTracking.campaign_id == campaign_id,
         CampaignCustomerTracking.customer_email == email_clean

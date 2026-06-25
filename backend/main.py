@@ -1,39 +1,22 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 import os
-import traceback
 
 from .database import engine, Base
 from .routers import auth, admin, onboarding, dashboard
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Startup: create all database tables (wrapped so a bad DB URL doesn't
-    crash the entire Vercel lambda at import time).
-    """
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("Database tables created / verified OK")
-    except Exception as exc:
-        # Log the error but let the app start – API health check will surface it
-        print(f"WARNING: Could not run create_all: {exc}")
-    yield
-    # Shutdown logic here if needed
-
+# Create database tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Leafy Dash",
     description="A secure modular business dashboard system customized for your operational needs.",
-    version="1.0.0",
-    lifespan=lifespan,
+    version="1.0.0"
 )
 
-# ── CORS ─────────────────────────────────────────────────────────────────────
+# CORS middleware config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,43 +25,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── API Routers ───────────────────────────────────────────────────────────────
+# Cache control middleware to prevent stale cache on browser
+@app.middleware("http")
+async def add_no_cache_header(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    # Disable cache for API endpoints and direct HTML routes
+    if path.startswith("/api") or path.endswith(".html") or path in ["/", "/login", "/register", "/admin-portal", "/onboarding", "/dashboard", "/promo"]:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
+# Include API routers
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(onboarding.router)
 app.include_router(dashboard.router)
 
-# ── Global exception handler (surfaces real errors for debugging) ─────────────
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    tb = traceback.format_exc()
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"{type(exc).__name__}: {exc}", "traceback": tb},
-    )
+# Mount Static Directories for CSS/JS assets if they exist
+try:
+    os.makedirs("frontend/css", exist_ok=True)
+    os.makedirs("frontend/js", exist_ok=True)
+    os.makedirs("frontend/images", exist_ok=True)
+    os.makedirs("uploads", exist_ok=True)
+except Exception as e:
+    print(f"Directory creation skipped (read-only file system): {e}")
 
-# ── Static file directories ───────────────────────────────────────────────────
-upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
+app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
+app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
+app.mount("/images", StaticFiles(directory="frontend/images"), name="images")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-for d in ["frontend/css", "frontend/js", "frontend/images", upload_dir]:
-    try:
-        os.makedirs(d, exist_ok=True)
-    except Exception:
-        pass
-
-for _route, _dir, _name in [
-    ("/css",     "frontend/css",    "css"),
-    ("/js",      "frontend/js",     "js"),
-    ("/images",  "frontend/images", "images"),
-    ("/uploads", upload_dir,        "uploads"),
-]:
-    try:
-        if os.path.isdir(_dir):
-            app.mount(_route, StaticFiles(directory=_dir), name=_name)
-    except Exception as e:
-        print(f"Static mount skipped for {_dir}: {e}")
-
-# ── Frontend HTML routes ──────────────────────────────────────────────────────
+# Frontend Page Routes (Serving HTML files securely)
 @app.get("/")
 def read_index():
     return FileResponse("frontend/index.html")
@@ -110,24 +90,3 @@ def read_promo():
 @app.get("/review/{user_id}")
 def read_public_review(user_id: int):
     return FileResponse("frontend/public_review.html")
-
-# ── Health check ──────────────────────────────────────────────────────────────
-@app.get("/api/health")
-def health():
-    from .database import DATABASE_URL
-    db_type = "postgresql" if "postgresql" in DATABASE_URL else "sqlite"
-    return {"status": "ok", "db": db_type}
-
-# ── Debug endpoint (safe — no secrets exposed) ────────────────────────────────
-@app.get("/api/debug")
-def debug():
-    import os
-    from .auth import ADMIN_USERNAME, SECRET_KEY
-    return {
-        "DATABASE_URL_set": "postgresql" in os.getenv("DATABASE_URL", ""),
-        "JWT_SECRET_KEY_set": os.getenv("JWT_SECRET_KEY") is not None,
-        "JWT_SECRET_KEY_is_default": os.getenv("JWT_SECRET_KEY") == "antigravity_super_secret_session_key_987654321",
-        "ADMIN_USERNAME": ADMIN_USERNAME,
-        "ADMIN_PASSWORD_set": os.getenv("ADMIN_PASSWORD") is not None,
-        "running_on_vercel": os.getenv("VERCEL") is not None,
-    }
