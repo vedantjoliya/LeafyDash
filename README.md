@@ -1,99 +1,138 @@
-# 🍃 Leafy Dash
+# Leafy Dash Business Operations Portal
 
-**Leafy Dash** is a secure, elegant, and modular business operations dashboard. Designed with soft, natural aesthetics, custom-tailored color palettes, and interactive user interfaces, it enables multi-location shop owners to manage sales, track inventory, capture QR-based customer feedback, log CRM campaigns, and handle support tickets directly from a single portal.
-
----
-
-## 🚀 Features & Modules
-
-### 1. 📊 Overview & Operational Analytics
-* **Dynamic KPIs**: Real-time display of **Revenue**, **Spends**, **Net Profit**, and **Average Review Rating** with dynamic currency symbols and localized formats.
-* **Profit Tracking Chart**: Dynamic Chart.js visualizations tracking sales revenue vs operating costs over time.
-* **System Metrics Monitor**: Real-time server load, API latency trackers, and service health status bars.
-
-### 2. 🏪 Storefront & Branch Locations Management
-* Create and edit branch offices, storefronts, and warehouse locations.
-* View directories detailing storefront Manager, Address, Email, and Phone contacts.
-* Cascade deletes: Removing a storefront automatically purges associated inventory items, sales logs, and customer purchasing records.
-
-### 3. 📦 Smart Inventory Catalog
-* **Stock & SKU Tracking**: Track stock levels, buying prices, selling prices, and automatic low-stock triggers.
-* **Location Contexts**: Switch storefront locations dynamically to view local inventory lists.
-* **Product Management**: Upload product images, define names, input custom SKU numbers, and update details on-the-fly.
-
-### 4. 🧾 Sales Transaction Log
-* **POS Cart System**: Select storefront products, build a cart, adjust quantities, calculate totals, and log sales transactions instantly.
-* **Transaction Invoices Table**: Fully searchable log of transactions detailing date, location, amount, and customer details.
-* **Receipts & Shares**: Open details in an elegant receipt view, print directly, or generate WhatsApp/Email templates to share with clients.
-
-### 5. ⭐ QR Reviews & Customer Feedback
-* **Print-Ready QR Codes**: Automatically generates printable QR codes matching storefront links (`/review/{user_id}?location_id={loc_id}`).
-* **Secure Review Logic**: Verifies customer purchase history prior to allowing 5-star reviews to prevent review bombing.
-* **Negative Feedback Escalation**: Low-rating customer feedback (e.g. 1-2 stars) automatically generates a priority support ticket inside the CRM section to resolve customer issues.
-
-### 6. ✉️ CRM & Marketing Broadcast Campaigns
-* **Customer Directory**: Centralized table detailing customer lifetime value (LTV), transaction counts, last visit dates, and contacts.
-* **Multi-Channel Campaigns**: Broadcast marketing messages via WhatsApp, Email, or Print flyer templates (*Seasonal Promo*, *Product Launch Alert*, and *Loyalty Reward*).
-* **Flyer Generator**: Automatically formats printable promotional cards featuring personalized customer tags and storefront QR codes.
-* **Sent Campaigns Log**: Persistent historical logs of all sent campaigns detailing coupon codes, segments, channels, and recipient counts.
-
-### 7. 🛡️ System Administration Console (`/admin-portal`)
-* **Pending Approvals**: Secure verification workflow. New shops start as `pending` and must be approved by the root admin.
-* **Direct Broadcast Messages**: Send global notifications, server maintenance warnings, and administrative announcements directly to shop dashboards.
-* **Shop Removal**: Root admin can delete shop accounts instantly, which cascades to delete all store data to satisfy compliance rules.
-
-### 8. 💬 Integrated Support Settings & Inbox
-* **Contact Admin Form**: Shops can submit questions, bug reports, and account queries to the root admin.
-* **Integrated Inbox Card**: Submited support queries and admin announcements are housed directly within the Settings menu.
-* **Unread Notifications Badge**: Visual badge counts unread announcements to keep shop owners updated.
+Leafy Dash is a secure, enterprise-grade modular business operations dashboard. Built with a responsive, modern user interface, the system allows multi-location merchants to manage POS transactions, monitor inventory levels, coordinate marketing campaigns, capture QR-based customer reviews, and resolve support requests from a unified workspace.
 
 ---
 
-## 🌍 Localizations & Internationalization (i18n)
-* **Regional Currencies**: Instantly toggle between **USD ($)**, **GBP (£)**, and **EUR (€)**. Setting a currency applies it dynamically to all pricing, metrics, invoices, and cart systems.
-* **Multi-Lingual Interface**: Dynamically toggle between **English (EN)**, **French (FR)**, and **German (DE)**. The sidebar navigation, titles, and support logs automatically translate.
-* **Date & Metric Preferences**: Select preferred formatting options (`MM/DD/YYYY`, `DD/MM/YYYY`, or `YYYY-MM-DD`) and measurement systems (Metric/Imperial).
+## Live Production Environment
+
+The system is deployed in production using serverless containers integrated with a cloud-hosted database.
+
+* **Production Dashboard URL**: [https://leafy-dash.vercel.app](https://leafy-dash.vercel.app)
+* **Root Admin Portal URL**: [https://leafy-dash.vercel.app/admin-portal](https://leafy-dash.vercel.app/admin-portal)
+
+### Demo Credentials
+
+#### 1. Storefront Merchant Portal
+* **Email**: `contactsvedant@gmail.com`
+* **Password**: `Joliya@283`
+*(Provides access to the garden shop merchant dashboard, active module tabs, analytics charts, and transaction logs).*
+
+#### 2. System Root Admin Portal
+* **Username**: `admin`
+* **Password**: `adminpass123`
+*(Provides access to account approvals, system-wide maintenance broadcasts, and shop management).*
 
 ---
 
-## 🛡️ Security Enhancements
-* **Strict Form Validation**: Client-side validation checks input integrity. Text inputs cannot consist of only blank whitespace, and email forms require RFC 5322 pattern matches.
-* **Strong Password Validation**: Enforces minimum 8 characters containing at least one uppercase letter, one lowercase letter, one digit, and one special symbol (`@$!%*?&_#-`).
-* **Backend Database Schemas**: Enforces data constraints on model schemas using Pydantic validators (preventing negative prices, empty fields, and unauthorized ratings).
+## Core Operational Modules
+
+### 1. Overview & Location Analytics
+* **Unified Metrics**: Computes real-time sales revenue, payroll expenditures, operational costs, and customer review scores.
+* **Storefront Sales Breakdown**: Dynamic Chart.js visualizations outlining the percentage of revenue generated by individual branches.
+* **Operational Expense Breakdown**: Tracks payroll vs fixed expenditures over time.
+
+### 2. Multi-Storefront & Branch Management
+* Manage storefront locations, warehouse branches, and administrative offices.
+* Stores localized branch contacts (Manager, Address, Phone, Email).
+* Enforces cascading deletions to guarantee automatic cleanup of linked products and transaction histories.
+
+### 3. Inventory & SKU Catalog
+* **Asset Tracking**: Track stock quantity, acquisition cost, listing price, and low-stock warning levels.
+* **Location Context Filtering**: Filter stock databases dynamically by branch or warehouse.
+
+### 4. Point-of-Sale (POS) & Invoice Registry
+* **Shopping Cart System**: Log cash/card sales, apply active campaign discounts, and calculate tax rates dynamically.
+* **Invoice Log**: Full transaction history including invoices, date stamps, payment methods, and customer addresses.
+* **Sharing Templates**: Exports formatted receipts or pre-configured email and WhatsApp templates for clients.
+
+### 5. Verified QR Customer Feedback
+* **Dynamic QR Generation**: Produces print-ready QR codes linking to location-specific feedback forms.
+* **Purchase Verification**: Restricts review access to customers with valid checkout records.
+* **Negative Feedback Escalation**: Auto-detects 1-2 star reviews and automatically inserts support tickets into the CRM backlog for immediate resolution.
+
+### 6. Marketing Campaigns & CRM Backlog
+* **Customer Registry**: Tracks Customer Lifetime Value (LTV), visit frequency, and contact records.
+* **Broadcast Campaigns**: Design flyer campaigns and discount vouchers.
+* **Campaign Constraints**: Automatically invalidates discount codes if campaigns are expired, manually stopped, or scheduled for a future start date.
+
+### 7. Global Administration Console
+* **Onboarding Validation**: Holds new shop registrations in a pending state until vetted and approved.
+* **Global Notifications**: Broadcasts maintenance announcements or system notices to all merchant inboxes.
 
 ---
 
-## 📐 Architecture & Data Flow
+## Architecture & Data Flow
 
-Leafy Dash is structured as a decoupled architecture where the FastAPI backend serves static frontend files and interacts via a REST API:
+Leafy Dash uses a decoupled client-server architecture. The FastAPI backend serves static frontend assets and handles CRUD requests via REST endpoints to a Supabase PostgreSQL instance.
 
 ```mermaid
 graph TD
-    User([Browser Client]) -->|HTTP GET /| FastAPI[FastAPI Backend]
-    User -->|AJAX API Request| FastAPI
-    FastAPI -->|ORM queries| SQLAlchemy[SQLAlchemy ORM]
-    SQLAlchemy -->|Read/Write| DB[(SQLite / PostgreSQL)]
-    FastAPI -->|Serve static HTML/CSS/JS| Static[Static Filesystem]
-```
+    subgraph Client Tier [Client Tier - Browser]
+        UI[Merchant Dashboard]
+        POS[POS Cart Module]
+        QR[QR Review Portal]
+        ADM[Admin Console]
+    end
 
-### Flow of Core Interactions:
-1. **Onboarding & Configuration**:
-   During registration, users are routed to `/onboarding`. Their modular selections (Overview, Inventory, Analytics, etc.) customize the database settings and shape the workspace sidebar tabs dynamically.
-2. **Review to CRM Loop**:
-   * A customer scans a QR code at `/review/{user_id}`.
-   * If the rating is 1 or 2 stars, the backend automatically flags it and creates a ticket in the `CRMLead` table.
-   * The business owner sees the alert in their **CRM & Campaigns** dashboard, allowing them to contact the customer and resolve the ticket.
-3. **Admin Announcement Routing**:
-   * Admin posts a message from the `/admin-portal`.
-   * The message is stored in the `AdminMessage` table.
-   * Dashboard clients query `/api/dashboard/inbox` and show a real-time badge count next to the **Settings** menu.
+    subgraph API Gateway [API Gateway & Routing - FastAPI]
+        MD[Cache Control Middleware]
+        RT_AUTH[Auth Router]
+        RT_DASH[Dashboard Analytics Router]
+        RT_ONB[Onboarding Router]
+        RT_ADM[Admin Router]
+    end
+
+    subgraph Data Access Layer [Data Access Layer]
+        SQA[SQLAlchemy ORM Engine]
+        NP[NullPool Connection Handler]
+    end
+
+    subgraph Data Tier [Data Tier - AWS Frankfurt]
+        DB[(Supabase PostgreSQL)]
+        T_USR[users Table]
+        T_LOC[locations Table]
+        T_PROD[products Table]
+        T_SAL[sales Table]
+        T_REV[reviews Table]
+        T_CAMP[marketing_campaigns Table]
+    end
+
+    %% Client requests route through Middleware to Routers
+    UI -->|AJAX API Request| MD
+    POS -->|AJAX API Request| MD
+    QR -->|Submit Feedback| MD
+    ADM -->|Broadcast Alerts| MD
+    
+    MD --> RT_AUTH
+    MD --> RT_DASH
+    MD --> RT_ONB
+    MD --> RT_ADM
+
+    %% Routers communicate with DB via ORM
+    RT_AUTH --> SQA
+    RT_DASH --> SQA
+    RT_ONB --> SQA
+    RT_ADM --> SQA
+    
+    SQA -->|NullPool Pooler Connection| NP
+    NP -->|Port 6543 IPv4 Routing| DB
+
+    %% DB Tables Relationship
+    DB --- T_USR
+    DB --- T_LOC
+    DB --- T_PROD
+    DB --- T_SAL
+    DB --- T_REV
+    DB --- T_CAMP
+```
 
 ---
 
-## 🛠️ Local Development Setup
+## Local Development Installation
 
 ### Prerequisites
-* Python 3.8 or higher installed on your system.
+* Python 3.8 or higher installed on your local machine.
 
 ### Installation Steps
 1. **Clone the Repository**:
@@ -116,51 +155,28 @@ graph TD
    pip install -r requirements.txt
    ```
 
-4. **Environment Variables**:
-   Create a `.env` file in the root directory (optional, defaults to local SQLite):
+4. **Configure Local Environment**:
+   Create a `.env` file in the project root directory:
    ```env
-   DATABASE_URL=sqlite:///./database.db
-   SECRET_KEY=YOUR_SUPER_SECRET_JWT_KEY
-   ALGORITHM=HS256
-   ACCESS_TOKEN_EXPIRE_MINUTES=1440
+   JWT_SECRET_KEY=antigravity_super_secret_session_key_987654321
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=adminpass123
+   DATABASE_URL=postgresql://postgres:[YOUR_PASSWORD]@db.sgushsxnhnipqewomuby.supabase.co:5432/postgres
    ```
 
-5. **Run Development Server**:
+5. **Start Local Server**:
    ```bash
    uvicorn backend.main:app --reload
    ```
-   Open your browser to `http://127.0.0.1:8000` to view the application.
+   Access the local client at `http://127.0.0.1:8000`.
 
 ---
 
-## ☁️ Deployment from GitHub to Vercel
+## Production Deployment on Vercel
 
-Leafy Dash is optimized for seamless deployment to Vercel using serverless functions.
-
-### How it Works:
-* Vercel reads `vercel.json` and routes all frontend/backend traffic to `api/index.py`.
-* `api/index.py` boots the FastAPI app from `backend/main.py`.
-* FastAPI mounts static folder paths (`/css`, `/js`, `/images`) and handles user/admin rendering natively.
-
-### ⚠️ Critical Note on Databases in Serverless Environments:
-Vercel Serverless Functions are **stateless and ephemeral**. The default local SQLite database (`database.db`) will be reset every time a function goes idle (cold start). 
-
-To persist your database records in staging or production:
-1. Provision a managed PostgreSQL instance (e.g. Supabase, Neon.tech, or CockroachDB).
-2. Grab your connection URI (e.g. `postgresql://user:pass@host:5432/dbname`).
-3. Add it as an Environment Variable inside your Vercel Project Settings named **`DATABASE_URL`**.
-4. The system automatically converts `postgres://` to `postgresql://` and sets up the schemas on build.
-
-### Deployment Instructions:
-1. Push your latest code changes to GitHub:
-   ```bash
-   git add .
-   git commit -m "Configure Vercel Serverless Deployment"
-   git push origin main
-   ```
-2. Log into the [Vercel Dashboard](https://vercel.com).
-3. Click **Add New** > **Project** and import your `LeafyDash` repository.
-4. Expand **Environment Variables** and add:
-   * `DATABASE_URL`: Your production PostgreSQL connection string.
-   * `SECRET_KEY`: A secure random hash string for authentication tokens.
-5. Click **Deploy**. Vercel will build the dependencies and provide you with a live URL.
+* **Vercel Settings**:
+  * Set `DATABASE_URL` to the Supavisor Pooler Connection String (Transaction Mode, Port `6543`) to support IPv4 routing in Vercel:
+    `postgresql://postgres.sgushsxnhnipqewomuby:[YOUR_PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:6543/postgres`
+  * Configure `JWT_SECRET_KEY`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` in the Vercel project environment variables settings.
+* **Co-Location for Low Latency**:
+  The project region is locked in `vercel.json` to Frankfurt (`"regions": ["fra1"]`) to co-locate Vercel's serverless functions next to the Supabase database region, reducing round-trip latency to less than **150ms**.
