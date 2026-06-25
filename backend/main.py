@@ -7,8 +7,14 @@ import os
 from .database import engine, Base
 from .routers import auth, admin, onboarding, dashboard
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables with startup resilience
+db_init_error = None
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    import traceback
+    db_init_error = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+    print(f"CRITICAL DATABASE INITIALIZATION ERROR: {db_init_error}")
 
 app = FastAPI(
     title="Leafy Dash",
@@ -49,14 +55,22 @@ try:
     os.makedirs("frontend/css", exist_ok=True)
     os.makedirs("frontend/js", exist_ok=True)
     os.makedirs("frontend/images", exist_ok=True)
-    os.makedirs("uploads", exist_ok=True)
 except Exception as e:
-    print(f"Directory creation skipped (read-only file system): {e}")
+    print(f"Static directory creation skipped: {e}")
+
+uploads_dir = "uploads"
+if not os.path.exists(uploads_dir):
+    try:
+        os.makedirs(uploads_dir, exist_ok=True)
+    except Exception as e:
+        print(f"Uploads directory creation failed (read-only file system), falling back to /tmp: {e}")
+        uploads_dir = "/tmp/uploads"
+        os.makedirs(uploads_dir, exist_ok=True)
 
 app.mount("/css", StaticFiles(directory="frontend/css"), name="css")
 app.mount("/js", StaticFiles(directory="frontend/js"), name="js")
 app.mount("/images", StaticFiles(directory="frontend/images"), name="images")
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 # Frontend Page Routes (Serving HTML files securely)
 @app.get("/")
@@ -90,3 +104,21 @@ def read_promo():
 @app.get("/review/{user_id}")
 def read_public_review(user_id: int):
     return FileResponse("frontend/public_review.html")
+
+# ── Debug endpoint (safe — no secrets exposed) ────────────────────────────────
+@app.get("/api/debug")
+def debug():
+    import os
+    from .auth import ADMIN_USERNAME
+    from .database import DATABASE_URL
+    return {
+        "DATABASE_URL_scheme": DATABASE_URL.split("://")[0] if "://" in DATABASE_URL else "unknown",
+        "DATABASE_URL_host": DATABASE_URL.split("@")[-1].split(":")[0].split("/")[0] if "@" in DATABASE_URL else "local/sqlite",
+        "DATABASE_URL_port": DATABASE_URL.split("@")[-1].split(":")[1].split("/")[0] if "@" in DATABASE_URL and ":" in DATABASE_URL.split("@")[-1] else "default",
+        "JWT_SECRET_KEY_set": os.getenv("JWT_SECRET_KEY") is not None,
+        "JWT_SECRET_KEY_is_default": os.getenv("JWT_SECRET_KEY") == "antigravity_super_secret_session_key_987654321",
+        "ADMIN_USERNAME": ADMIN_USERNAME,
+        "ADMIN_PASSWORD_set": os.getenv("ADMIN_PASSWORD") is not None,
+        "running_on_vercel": os.getenv("VERCEL") is not None,
+        "db_init_error": db_init_error
+    }
