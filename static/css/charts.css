@@ -1,2 +1,0 @@
-.charts-grid { display: grid; grid-template-columns: 1fr; gap: 40px; margin-top: 20px; }
-.chart-container { background: transparent; padding: 0; border: none; height: 350px; position: relative; }

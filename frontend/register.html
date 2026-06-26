@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Business Account | Leafy Dash</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="icon" type="image/png" href="/images/leafy_icon.png">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-container glass-panel">
+            <div class="auth-header">
+                <a href="/" class="auth-logo">
+                    <img src="/images/leafy_icon.png" alt="Leafy Logo" style="width: 56px; height: 56px; object-fit: contain;">
+                    Leafy Dash
+                </a>
+                <h2 class="auth-title">Register Your Business</h2>
+                <p class="auth-subtitle">Join us to customize your modern operational center.</p>
+            </div>
+            
+            <div id="alertContainer"></div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="businessName" class="form-label">Business Name</label>
+                    <input type="text" id="businessName" class="form-control" placeholder="e.g. EcoClean Co" required autocomplete="organization">
+                </div>
+                
+                <div class="form-group">
+                    <label for="industry" class="form-label">Industry Sector</label>
+                    <select id="industry" class="form-control" required>
+                        <option value="" disabled selected>Select your industry</option>
+                        <option value="Retail & Boutique">Retail & Boutique</option>
+                        <option value="Food & Restaurant">Food & Restaurant</option>
+                        <option value="Professional Services">Professional Services</option>
+                        <option value="E-Commerce & Online Sales">E-Commerce & Online Sales</option>
+                        <option value="Home & Cleaning Services">Home & Cleaning Services</option>
+                        <option value="Other">Other Sector</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">Work Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="name@business.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Security Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Submit Registration</button>
+            </form>
+
+            <div class="text-center-link">
+                Already registered? <a href="/login">Sign In here</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const businessName = document.getElementById('businessName').value;
+            const industry = document.getElementById('industry').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const alertContainer = document.getElementById('alertContainer');
+            
+            alertContainer.innerHTML = '';
+            
+            // Client-side validations
+            const nameError = validateRequiredString(businessName, "Business Name");
+            if (nameError) {
+                alertContainer.innerHTML = `<div class="alert-box alert-danger"><span>Error: ${nameError}</span></div>`;
+                return;
+            }
+
+            const industryError = validateRequiredString(industry, "Industry Sector");
+            if (industryError) {
+                alertContainer.innerHTML = `<div class="alert-box alert-danger"><span>Error: ${industryError}</span></div>`;
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                alertContainer.innerHTML = `<div class="alert-box alert-danger"><span>Error: Please enter a valid work email address.</span></div>`;
+                return;
+            }
+
+            const passwordError = getPasswordStrengthError(password);
+            if (passwordError) {
+                alertContainer.innerHTML = `<div class="alert-box alert-danger"><span>Error: ${passwordError}</span></div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email.trim(),
+                        password: password,
+                        business_name: businessName.trim(),
+                        industry: industry.trim()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alertContainer.innerHTML = `
+                        <div class="alert-box alert-success">
+                            <span>Success: Registration submitted! An admin will review and approve your account shortly.</span>
+                        </div>
+                    `;
+                    document.getElementById('registerForm').reset();
+                } else {
+                    alertContainer.innerHTML = `
+                        <div class="alert-box alert-danger">
+                            <span>Error: ${data.detail || 'Registration failed. Try again.'}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                alertContainer.innerHTML = `
+                    <div class="alert-box alert-danger">
+                        <span>Error: Network error. Please check your connection.</span>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
