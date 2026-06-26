@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Simulation | Access Terminal</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20width='32'%20height='32'%3E%3Crect%20width='24'%20height='24'%20rx='6'%20fill='%23111111'/%3E%3Crect%20width='12'%20height='12'%20x='6'%20y='6'%20rx='1.5'%20fill='none'%20stroke='%2339e622'%20stroke-width='1.5'/%3E%3Crect%20width='4'%20height='4'%20x='10'%20y='10'%20rx='0.5'%20fill='none'%20stroke='%2339e622'%20stroke-width='1.5'/%3E%3Cpath%20d='M10%202v4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M14%202v4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M10%2018v4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M14%2018v4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M18%2010h4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M18%2014h4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M2%2010h4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3Cpath%20d='M2%2014h4'%20stroke='%2339e622'%20stroke-width='1.5'%20stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/static/css/style.css?v=1.2">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .landing-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+            width: 100%;
+            max-width: 1100px;
+            min-height: 85vh;
+            padding: 20px;
+            margin: auto;
+            z-index: 2;
+        }
+        .teaser-panel {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 540px;
+        }
+        .teaser-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .teaser-logo {
+            width: 50px;
+            height: 50px;
+            color: var(--primary-color);
+            animation: bounce-glow 3s infinite ease-in-out;
+        }
+        @keyframes bounce-glow {
+            0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 2px var(--primary-color)); }
+            50% { transform: translateY(-5px) scale(1.05); filter: drop-shadow(0 0 15px var(--primary-color)); }
+        }
+        .teaser-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            font-family: var(--font-heading);
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .teaser-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+        .teaser-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .teaser-card {
+            background: var(--card-bg-solid);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .teaser-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .teaser-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-soft), 0 10px 20px rgba(0,0,0,0.05);
+        }
+        .teaser-card:hover::before {
+            opacity: 1;
+        }
+        .teaser-val {
+            font-size: 1.7rem;
+            font-weight: 600;
+            font-family: monospace;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .teaser-lbl {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+        .teaser-console {
+            background: #09090b;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            height: 180px;
+            overflow-y: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .teaser-console-log div {
+            color: #4ade80;
+            animation: line-fade-in 0.3s ease-out forwards;
+        }
+        body.theme-midnight .teaser-console-log div {
+            color: #22d3ee;
+        }
+        body.theme-cyber .teaser-console-log div {
+            color: #f472b6;
+        }
+        @keyframes line-fade-in {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .landing-container {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-soft);
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px 30px;
+            width: 440px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            transition: all 0.3s;
+        }
+        .landing-container .subtitle {
+            margin-bottom: 12px;
+        }
+        .landing-container .tabs {
+            margin-bottom: 14px;
+        }
+        .landing-container .input-group {
+            margin-bottom: 10px;
+        }
+        .landing-container .input-group label {
+            margin-bottom: 3px;
+            font-size: 0.8rem;
+        }
+        .landing-container .input-group input, 
+        .landing-container .input-group select {
+            padding: 9px 12px;
+            font-size: 0.9rem;
+        }
+        .landing-container .btn-primary {
+            height: 38px;
+            padding: 8px 16px;
+        }
+        .landing-body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse-ring 1.5s infinite;
+        }
+        body.theme-midnight .pulse-dot {
+            background-color: #06b6d4;
+            box-shadow: 0 0 8px #06b6d4;
+        }
+        body.theme-cyber .pulse-dot {
+            background-color: #ec4899;
+            box-shadow: 0 0 8px #ec4899;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+            100% { transform: scale(0.9); opacity: 1; }
+        }
+        
+        @media (max-width: 960px) {
+            .landing-wrapper {
+                flex-direction: column;
+                gap: 40px;
+                padding: 40px 20px;
+            }
+            .teaser-panel {
+                max-width: 440px;
+                text-align: center;
+            }
+            .teaser-header {
+                justify-content: center;
+            }
+            .teaser-console {
+                display: none;
+            }
+        }
+        @media (max-width: 480px) {
+            .landing-container {
+                width: 100%;
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+<body class="landing-body">
+    <div class="landing-wrapper">
+        
+        <div class="teaser-panel">
+            <div class="teaser-header">
+                <i data-lucide="cpu" class="teaser-logo"></i>
+                <h1 class="teaser-title">Company Sim.</h1>
+            </div>
+            <p class="teaser-description">
+                Experience real-time corporate warfare. Manage development sprints, deploy hotfixes, coordinate team bonding, and optimize product metrics to achieve absolute market dominance.
+            </p>
+            
+            <div class="teaser-grid">
+                <div class="teaser-card">
+                    <div class="teaser-val" id="metric-nodes">12 / 16</div>
+                    <div class="teaser-lbl">Simulation Nodes</div>
+                </div>
+                <div class="teaser-card">
+                    <div class="teaser-val"><span class="pulse-dot"></span> <span id="metric-uptime">99.9%</span></div>
+                    <div class="teaser-lbl">Global Uptime</div>
+                </div>
+                <div class="teaser-card">
+                    <div class="teaser-val" id="metric-load">42.8%</div>
+                    <div class="teaser-lbl">Core Thread Load</div>
+                </div>
+                <div class="teaser-card">
+                    <div class="teaser-val">100Gbps</div>
+                    <div class="teaser-lbl">Network Ingress</div>
+                </div>
+            </div>
+            
+            <div class="teaser-console">
+                <div style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; margin-bottom: 4px;">Simulation Event Log</div>
+                <div class="teaser-console-log" id="teaser-console-log">
+                    
+                </div>
+            </div>
+        </div>
+
+        
+        <div class="landing-container glass-panel">
+            <h2 style="font-family: var(--font-heading); margin-bottom: 5px; font-size: 1.8rem; font-weight: 600;">Access Terminal</h2>
+            <p class="subtitle" data-translate="subtitle">Join a session or initialize a new simulation environment.</p>
+            
+            <div class="tabs">
+                <button class="tab-btn active" id="btn-tab-join" onclick="showTab('join')" data-translate="tab_join">Join Session</button>
+                <button class="tab-btn" id="btn-tab-create" onclick="showTab('create')" data-translate="tab_admin">Admin Controls</button>
+            </div>
+
+            
+            <div id="join-tab" class="tab-content active">
+                <div class="input-group">
+                    <label for="player-name" data-translate="label_name">Your Name</label>
+                    <input type="text" id="player-name" placeholder="E.g., Jane Doe" oninput="debouncedCheckPlayer()" autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label for="join-code" data-translate="label_code">Session Code</label>
+                    <input type="text" id="join-code" placeholder="6-digit code" maxlength="6" oninput="debouncedCheckPlayer()" autocomplete="off">
+                </div>
+                
+                <div class="input-group" id="role-group">
+                    <label for="role-select" data-translate="label_role">Select Role</label>
+                    <select id="role-select">
+                        
+                    </select>
+                </div>
+                
+                <div class="input-group" id="password-group">
+                    <label for="player-password" id="password-label" data-translate="label_password">Password</label>
+                    <input type="password" id="player-password" placeholder="Enter password" autocomplete="new-password">
+                </div>
+                
+                <div class="input-group" id="confirm-password-group">
+                    <label for="player-confirm-password" id="confirm-password-label" data-translate="label_confirm_password">Confirm Password</label>
+                    <input type="password" id="player-confirm-password" placeholder="Confirm password" autocomplete="new-password">
+                </div>
+                
+                <button class="btn-primary w-100" id="join-btn" onclick="joinGame()" data-translate="btn_join">Enter Simulation</button>
+                <p id="join-error" class="error-text" style="margin-top: 8px; text-align: center; font-weight: 600;"></p>
+            </div>
+
+            
+            <div id="create-tab" class="tab-content">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5;" data-translate="admin_desc">
+                    Create a new simulation session. As an administrator, you will manage the game state and monitor player performance.
+                </p>
+                <button class="btn-primary w-100" onclick="createSession()" data-translate="btn_create">Create Session</button>
+            </div>
+            
+            
+            <div style="margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 15px; font-size: 0.8rem; color: var(--text-secondary);">
+                <span id="terminal-status"><i data-lucide="terminal" class="inline-icon" style="width: 12px; height: 12px;"></i> Ready</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="languages" style="width: 14px; height: 14px;"></i>
+                        <select id="setting-lang" onchange="translatePage(this.value)" style="border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 0.75rem; border-radius: 4px; padding: 2px 5px; outline: none; cursor: pointer; font-family: var(--font-body);">
+                            <option value="en">English</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                            <option value="de">Deutsch</option>
+                            <option value="zh">中文</option>
+                            <option value="ja">日本語</option>
+                            <option value="pt">Português</option>
+                            <option value="ru">Русский</option>
+                            <option value="ar">العربية</option>
+                            <option value="hi">हिन्दी</option>
+                            <option value="gu">ગુજરાતી</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="palette" style="width: 14px; height: 14px;"></i>
+                        <select id="setting-theme" onchange="changeTheme(this.value)" style="border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-primary); font-size: 0.75rem; border-radius: 4px; padding: 2px 5px; outline: none; cursor: pointer; font-family: var(--font-body);">
+                            <option value="default">Paper</option>
+                            <option value="midnight">Midnight</option>
+                            <option value="cyber">Cyberpunk</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            en: {
+                subtitle: "Join a session or initialize a new simulation environment.",
+                tab_join: "Join Session",
+                tab_admin: "Admin Controls",
+                label_name: "Your Name",
+                label_code: "Session Code",
+                label_role: "Select Role",
+                label_password: "Password",
+                label_confirm_password: "Confirm Password",
+                btn_join: "Enter Simulation",
+                btn_create: "Create Session",
+                admin_desc: "Create a new simulation session. As an administrator, you will manage the game state and monitor player performance.",
+                reconnect: "Reconnect / Sign In",
+                enter_pass: "Enter Password"
+            },
+            es: {
+                subtitle: "Únase a una sesión o inicie un nuevo entorno de simulación.",
+                tab_join: "Unirse a Sesión",
+                tab_admin: "Controles de Administrador",
+                label_name: "Su Nombre",
+                label_code: "Código de Sesión",
+                label_role: "Seleccionar Rol",
+                label_password: "Contraseña",
+                label_confirm_password: "Confirmar Contraseña",
+                btn_join: "Iniciar Simulación",
+                btn_create: "Crear Sesión",
+                admin_desc: "Cree una nueva sesión de simulación. Como administrador, gestionará el estado del juego y supervisará el rendimiento del jugador.",
+                reconnect: "Reconectar / Iniciar Sesión",
+                enter_pass: "Introducir Contraseña"
+            },
+            fr: {
+                subtitle: "Rejoignez une session ou initialisez un nouvel environnement de simulation.",
+                tab_join: "Rejoindre la Session",
+                tab_admin: "Contrôles Administrateur",
+                label_name: "Votre Nom",
+                label_code: "Code de Session",
+                label_role: "Sélectionner le Rôle",
+                label_password: "Mot de passe",
+                label_confirm_password: "Confirmer le Mot de passe",
+                btn_join: "Entrer dans la Simulation",
+                btn_create: "Créer une Session",
+                admin_desc: "Créez une nouvelle session de simulation. En tant qu'administrateur, vous gérerez l'état du jeu et surveillerez les performances des joueurs.",
+                reconnect: "Se reconnecter / Se connecter",
+                enter_pass: "Entrer le mot de passe"
+            },
+            de: {
+                subtitle: "Treten Sie einer Sitzung bei oder initialisieren Sie eine neue Simulationsumgebung.",
+                tab_join: "Sitzung Beitreten",
+                tab_admin: "Admin-Steuerung",
+                label_name: "Ihr Name",
+                label_code: "Sitzungscode",
+                label_role: "Rolle Auswählen",
+                label_password: "Passwort",
+                label_confirm_password: "Passwort Bestätigen",
+                btn_join: "Simulation Starten",
+                btn_create: "Sitzung Erstellen",
+                admin_desc: "Erstellen Sie eine neue Simulationssitzung. Als Administrator verwalten Sie den Spielstatus und überwachen die Leistung der Spieler.",
+                reconnect: "Erneut Verbinden / Anmelden",
+                enter_pass: "Passwort Eingeben"
+            },
+            zh: {
+                subtitle: "加入会话或初始化新的模拟环境。",
+                tab_join: "加入会话",
+                tab_admin: "管理控制",
+                label_name: "您的姓名",
+                label_code: "会话代码",
+                label_role: "选择角色",
+                label_password: "密码",
+                label_confirm_password: "确认密码",
+                btn_join: "进入模拟",
+                btn_create: "创建会话",
+                admin_desc: "创建一个新的模拟会话。作为管理员，您将管理游戏状态并监控玩家表现。",
+                reconnect: "重新连接 / 登录",
+                enter_pass: "输入密码"
+            },
+            ja: {
+                subtitle: "セッションに参加するか、新しいシミュレーション環境を初期化します。",
+                tab_join: "セッションに参加",
+                tab_admin: "管理者コントロール",
+                label_name: "お名前",
+                label_code: "セッションコード",
+                label_role: "役割の選択",
+                label_password: "パスワード",
+                label_confirm_password: "パスワードの確認",
+                btn_join: "シミュレーションを開始",
+                btn_create: "セッションを作成",
+                admin_desc: "新しいシミュレーションセッションを作成します。管理者として、ゲームの状態を管理し、プレイヤーのパフォーマンスを監視します。",
+                reconnect: "再接続 / サインイン",
+                enter_pass: "パスワードを入力"
+            },
+            pt: {
+                subtitle: "Participe de uma sessão ou inicialize um novo ambiente de simulação.",
+                tab_join: "Participar da Sessão",
+                tab_admin: "Controles do Administrador",
+                label_name: "Seu Nome",
+                label_code: "Código da Sessão",
+                label_role: "Selecionar Função",
+                label_password: "Senha",
+                label_confirm_password: "Confirmar Senha",
+                btn_join: "Entrar na Simulação",
+                btn_create: "Criar Sessão",
+                admin_desc: "Crie uma nova sessão de simulação. Como administrador, você gerenciará o estado do jogo e monitorará o desempenho dos jogadores.",
+                reconnect: "Reconectar / Entrar",
+                enter_pass: "Digite a Senha"
+            },
+            ru: {
+                subtitle: "Присоединяйтесь к сессии или инициализируйте новую среду симуляции.",
+                tab_join: "Присоединиться к сессии",
+                tab_admin: "Панель администратора",
+                label_name: "Ваше имя",
+                label_code: "Код сессии",
+                label_role: "Выберите роль",
+                label_password: "Пароль",
+                label_confirm_password: "Подтвердите пароль",
+                btn_join: "Войти в симуляцию",
+                btn_create: "Создать сессию",
+                admin_desc: "Создайте новую сессию симуляции. Как администратор, вы будете управлять состоянием игры и контролировать результаты игроков.",
+                reconnect: "Переподключиться / Войти",
+                enter_pass: "Введите пароль"
+            },
+            ar: {
+                subtitle: "انضم إلى جلسة أو قم بتهيئة بيئة محاكاة جديدة.",
+                tab_join: "انضمام للجلسة",
+                tab_admin: "لوحة التحكم",
+                label_name: "اسمك",
+                label_code: "رمز الجلسة",
+                label_role: "اختر الدور",
+                label_password: "كلمة المرور",
+                label_confirm_password: "تأكيد كلمة المرور",
+                btn_join: "دخول المحاكاة",
+                btn_create: "إنشاء جلسة",
+                admin_desc: "إنشاء جلسة محاكاة جديدة. بصفتك مسؤولاً، ستدير حالة اللعبة وتراقب أداء اللاعبين.",
+                reconnect: "إعادة الاتصال / تسجيل الدخول",
+                enter_pass: "أدخل كلمة المرور"
+            },
+            hi: {
+                subtitle: "एक सत्र में शामिल हों या एक नया सिमुलेशन वातावरण शुरू करें।",
+                tab_join: "सत्र में शामिल हों",
+                tab_admin: "एडमिन नियंत्रण",
+                label_name: "आपका नाम",
+                label_code: "सत्र कोड",
+                label_role: "भूमिका चुनें",
+                label_password: "पासवर्ड",
+                label_confirm_password: "पासवर्ड की पुष्टि करें",
+                btn_join: "सिमुलेशन दर्ज करें",
+                btn_create: "सत्र बनाएं",
+                admin_desc: "एक नया सिमुलेशन सत्र बनाएं। एक व्यवस्थापक के रूप में, आप खेल की स्थिति का प्रबंधन करेंगे और खिलाड़ी के प्रदर्शन की निगरानी करेंगे।",
+                reconnect: "पुनः कनेक्ट करें / साइन इन करें",
+                enter_pass: "पासवर्ड दर्ज करें"
+            },
+            gu: {
+                subtitle: "સત્રમાં જોડાઓ અથવા નવું સિમ્યુલેશન વાતાવરણ શરૂ કરો.",
+                tab_join: "સત્રમાં જોડાઓ",
+                tab_admin: "એડમિન નિયંત્રણો",
+                label_name: "તમારું નામ",
+                label_code: "સત્ર કોડ",
+                label_role: "ભૂમિકા પસંદ કરો",
+                label_password: "પાસવર્ડ",
+                label_confirm_password: "પાસવર્ડ કન્ફર્મ કરો",
+                btn_join: "સિમ્યુલેશન શરૂ કરો",
+                btn_create: "સત્ર બનાવો",
+                admin_desc: "નવું સિમ્યુલેશન સત્ર બનાવો. એડમિનિસ્ટ્રેટર તરીકે, તમે રમતની સ્થિતિનું સંચાલન કરશો અને ખેલાડીના પ્રદર્શન પર નજર રાખશો.",
+                reconnect: "ફરીથી જોડાઓ / સાઇન ઇન કરો",
+                enter_pass: "પાસવર્ડ દાખલ કરો"
+            }
+        };
+
+        let currentLang = 'en';
+
+        function translatePage(lang) {
+            currentLang = lang;
+            const dictionary = translations[lang] || translations['en'];
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (dictionary[key]) {
+                    el.textContent = dictionary[key];
+                }
+            });
+            
+            localStorage.setItem('company_sim_lang', lang);
+            
+            const selectEl = document.getElementById('setting-lang');
+            if (selectEl) {
+                selectEl.value = lang;
+            }
+            
+            checkPlayer();
+        }
+
+        function changeTheme(theme) {
+            document.body.className = 'landing-body';
+            if (theme !== 'default') {
+                document.body.classList.add('theme-' + theme);
+            }
+            localStorage.setItem('company_sim_theme', theme);
+            const selectEl = document.getElementById('setting-theme');
+            if (selectEl) {
+                selectEl.value = theme;
+            }
+        }
+
+        
+        fetch('/api/roles')
+            .then(r => r.json())
+            .then(roles => {
+                const select = document.getElementById('role-select');
+                roles.forEach(role => {
+                    const opt = document.createElement('option');
+                    opt.value = role.id;
+                    opt.textContent = `${role.title} (${role.department})`;
+                    select.appendChild(opt);
+                });
+            });
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tab + '-tab').classList.add('active');
+            if (tab === 'join') {
+                document.getElementById('btn-tab-join').classList.add('active');
+            } else {
+                document.getElementById('btn-tab-create').classList.add('active');
+            }
+        }
+
+        function createSession() {
+            window.location.href = '/admin';
+        }
+
+        let checkTimeout = null;
+        function debouncedCheckPlayer() {
+            clearTimeout(checkTimeout);
+            checkTimeout = setTimeout(checkPlayer, 300);
+        }
+
+        function checkPlayer() {
+            const name = document.getElementById('player-name').value.trim();
+            const code = document.getElementById('join-code').value.trim();
+            
+            const roleGroup = document.getElementById('role-group');
+            const confirmGroup = document.getElementById('confirm-password-group');
+            const passwordLabel = document.getElementById('password-label');
+            const joinBtn = document.getElementById('join-btn');
+            
+            const dictionary = translations[currentLang] || translations['en'];
+            
+            if (name.length === 0 || code.length === 0) {
+                roleGroup.style.display = 'block';
+                confirmGroup.style.display = 'block';
+                passwordLabel.textContent = dictionary['label_password'] || "Password";
+                joinBtn.textContent = dictionary['btn_join'] || "Enter Simulation";
+                return;
+            }
+
+            fetch('/api/check_player', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, join_code: code })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.valid_session && data.exists) {
+                    roleGroup.style.display = 'none';
+                    confirmGroup.style.display = 'none';
+                    passwordLabel.textContent = dictionary['enter_pass'] || "Enter Password";
+                    joinBtn.textContent = dictionary['reconnect'] || "Reconnect / Sign In";
+                } else {
+                    roleGroup.style.display = 'block';
+                    confirmGroup.style.display = 'block';
+                    passwordLabel.textContent = dictionary['label_password'] || "Password";
+                    joinBtn.textContent = dictionary['btn_join'] || "Enter Simulation";
+                }
+            })
+            .catch(err => {
+                console.error("Error checking player:", err);
+            });
+        }
+
+        function joinGame() {
+            const name = document.getElementById('player-name').value.trim();
+            const code = document.getElementById('join-code').value.trim();
+            const role = document.getElementById('role-select').value;
+            const password = document.getElementById('player-password').value;
+            const confirmPassword = document.getElementById('player-confirm-password').value;
+            const errorEl = document.getElementById('join-error');
+            
+            errorEl.textContent = '';
+            
+            if (!name || !code) {
+                errorEl.textContent = 'Name and session code are required.';
+                return;
+            }
+            
+            fetch('/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    join_code: code,
+                    role_id: role,
+                    password: password,
+                    confirm_password: confirmPassword
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = `/game`;
+                } else {
+                    errorEl.textContent = data.error;
+                }
+            })
+            .catch(err => {
+                errorEl.textContent = 'Network connection failed.';
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const joinCodeParam = urlParams.get('join_code');
+            if (joinCodeParam) {
+                document.getElementById('join-code').value = joinCodeParam;
+                debouncedCheckPlayer();
+            }
+
+            
+            const savedLang = localStorage.getItem('company_sim_lang') || 'en';
+            const savedTheme = localStorage.getItem('company_sim_theme') || 'default';
+            translatePage(savedLang);
+            changeTheme(savedTheme);
+            lucide.createIcons();
+
+            
+            let activeNodes = 12;
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    activeNodes = Math.min(16, Math.max(8, activeNodes + (Math.random() > 0.5 ? 1 : -1)));
+                    const nodesEl = document.getElementById('metric-nodes');
+                    if (nodesEl) nodesEl.textContent = activeNodes + ' / 16';
+                }
+                const loadVal = (35 + Math.random() * 20).toFixed(1) + '%';
+                const loadEl = document.getElementById('metric-load');
+                if (loadEl) loadEl.textContent = loadVal;
+                
+                const uptimeVal = (99.5 + Math.random() * 0.4).toFixed(1) + '%';
+                const uptimeEl = document.getElementById('metric-uptime');
+                if (uptimeEl) uptimeEl.textContent = uptimeVal;
+            }, 3000);
+
+            
+            const consoleEl = document.getElementById('teaser-console-log');
+            const logTemplates = [
+                "Connection established with master node.",
+                "Syncing competitor network parameters...",
+                "Calculated regional market index.",
+                "Audited active player budget states.",
+                "Ingress connection packet handshake approved.",
+                "Uptime verify: node core running cleanly.",
+                "Updated victory condition metrics matrix.",
+                "System load balance sequence complete.",
+                "Database check: connections active.",
+                "Broadcasting telemetry stats to nodes.",
+                "Garbage collection executed on stack threads."
+            ];
+            
+            function addSimulatedLog() {
+                if (consoleEl) {
+                    const randomMsg = logTemplates[Math.floor(Math.random() * logTemplates.length)];
+                    const timeStr = new Date().toLocaleTimeString().split(' ')[0];
+                    const p = document.createElement('div');
+                    p.textContent = `[${timeStr}] ${randomMsg}`;
+                    consoleEl.appendChild(p);
+                    while (consoleEl.children.length > 5) {
+                        consoleEl.removeChild(consoleEl.firstChild);
+                    }
+                }
+            }
+
+            
+            for (let i = 0; i < 4; i++) {
+                addSimulatedLog();
+            }
+            setInterval(addSimulatedLog, 4000);
+        });
+    </script>
+</body>
+</html>

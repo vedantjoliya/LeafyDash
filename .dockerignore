@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+venv/
+.env
+instance/
+*.db
+.git/
+.gitignore
+.vscode/
+.idea/
+*.md
+!requirements.txt
+Thumbs.db
+.DS_Store
